@@ -130,7 +130,11 @@ export function App() {
     <div className="pedal-chassis">
       <header className="pedal-header">
         <div className="brand">
-          <img src="/icons/icon.svg" alt="" className="brand-icon" />
+          <img
+            src={`${import.meta.env.BASE_URL}icons/icon.svg`}
+            alt=""
+            className="brand-icon"
+          />
           <div>
             <h1 className="brand-title">AFINADOR CROMÁTICO</h1>
             <p className="brand-subtitle">

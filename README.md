@@ -2,7 +2,7 @@
 
 Afinador cromático estilo pedal de escenario con **precisión estroboscópica (`< 0.05 cents`)** para **guitarra** y **bajo**, desarrollado como **Software Libre (`GNU GPL v3`)**.
 
-Funciona como aplicación web progresiva (**PWA**) instalable **100% sin internet** en Android y escritorio, procesando todo el audio localmente en el dispositivo (cero servidores externos, cero telemetría) y con estructura preparada para compilarse como `.apk` / `.aab` nativo mediante **Capacitor**.
+Funciona como aplicación web progresiva (**PWA**) instalable **100% sin internet** en Android y escritorio, procesando todo el audio localmente en el dispositivo (cero servidores externos, cero telemetría). Se despliega automáticamente en **GitHub Pages** (`https://gez-schegtel.github.io/afinador/`) y cuenta con estructura preparada para distribuirse como paquete libre `.apk` en **GitHub Releases** y **F-Droid** mediante **Capacitor**.
 
 ---
 
@@ -96,9 +96,16 @@ Para instalarla **sin conexión** en Android: abrí la app en Chrome (`localhost
 
 ---
 
-## 6. Empaquetado Nativo Android (`.apk` / `.aab`)
+## 6. Despliegue en GitHub Pages y Empaquetado Libre (`.apk` para F-Droid / GitHub Releases)
 
-El repositorio incluye `capacitor.config.json` listo para generar paquetes nativos para **F-Droid**, **GitHub Releases** o **Google Play Store** una vez instalados un JDK (`openjdk`) y las *Android SDK Command-Line Tools*:
+### A. Publicación Web PWA en GitHub Pages (automática)
+El repositorio incluye el flujo [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml):
+1. En GitHub, abrí **Settings → Pages** y en **Build and deployment → Source** seleccioná **GitHub Actions**.
+2. Cada `push` a `main` ejecuta la suite completa de tests de precisión, compila la PWA ajustando automáticamente `VITE_BASE_PATH=/afinador/` y la publica con **HTTPS** en **`https://gez-schegtel.github.io/afinador/`**.
+3. Desde Android, abrí esa URL en Chrome/Firefox/Brave y seleccioná **«Instalar aplicación»** para tenerla con ícono propio y uso **100% sin conexión**.
+
+### B. Empaquetado Nativo `.apk` (F-Droid y GitHub Releases)
+El repositorio incluye `capacitor.config.json` listo para generar paquetes nativos libres (sin SDKs propietarios ni rastreadores, cumpliendo los criterios de **F-Droid**) una vez instalados un JDK (`openjdk`) y las *Android SDK Command-Line Tools*:
 
 ```bash
 npm install @capacitor/core @capacitor/android
@@ -108,10 +115,9 @@ npx cap add android
 npx cap sync android
 ```
 
-Asegurate de incluir `<uses-permission android:name="android.permission.RECORD_AUDIO" />` en `android/app/src/main/AndroidManifest.xml` y luego compilá desde `android/`:
+Asegurate de incluir `<uses-permission android:name="android.permission.RECORD_AUDIO" />` en `android/app/src/main/AndroidManifest.xml` y compilá el `.apk` desde `android/`:
 
-* **`.apk` (instalación directa / F-Droid / GitHub Releases):** `./gradlew assembleRelease`
-* **`.aab` (Google Play Store):** `./gradlew bundleRelease`
+* **`.apk` de lanzamiento (F-Droid / GitHub Releases):** `./gradlew assembleRelease`
 
 ---
 
