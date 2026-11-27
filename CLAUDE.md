@@ -6,4 +6,4 @@ Las reglas completas de arquitectura, specs, DSP, UI, licencia GPLv3 y checklist
 
 - **Estado y próximos pasos:** [`ROADMAP.md`](./ROADMAP.md)
 - **Especificaciones de funcionalidades:** [`docs/specs/README.md`](./docs/specs/README.md) (plantilla en [`docs/specs/000-plantilla.md`](./docs/specs/000-plantilla.md))
-- **Comandos clave:** `npm test -- --run` · `npm run dev` · `npm run cap:sync` · `VITE_BASE_PATH=/afinador/ npm run build`
+- **Comandos clave:** `npm test -- --run` · `npm run dev` · `VITE_BASE_PATH=/afinador/ npm run build` · `npm run cap:sync` (en ese orden en el checklist) · `npm run bench`

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./pitch-worklet.ts?worker&url', () => ({ default: 'pitch-worklet.js' }));

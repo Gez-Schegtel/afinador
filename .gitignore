@@ -8,3 +8,6 @@ ios
 *.keystore
 *.jks
 local.properties
+*.apk
+*.aab
+*.apk.sha256

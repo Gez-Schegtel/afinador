@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Identificación de acordes a partir de notas marcadas en el mástil (Spec 005). Núcleo puro.
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import MetronomeTimerWorker from './metronome-timer.worker.ts?worker';
 import {
   MetronomeTimeline,

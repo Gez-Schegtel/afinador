@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { useMemo, type CSSProperties } from 'react';
 import {
   CHROMATIC_NOTE_OPTIONS,

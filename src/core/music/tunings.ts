@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Catálogo de afinaciones por instrumento (Spec 002). Núcleo 100% puro.
  *

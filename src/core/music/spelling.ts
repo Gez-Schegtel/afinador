@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Modelo de notas con ortografía enarmónica (letra + alteración + octava) en notación
  * científica de altura: C4 = Do central, A4 = La de referencia.

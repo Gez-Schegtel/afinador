@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { describe, expect, it } from 'vitest';
 import { identifyChord, type IdentifyResult } from './chord-identify';
 import { formatPitchName } from './spelling';

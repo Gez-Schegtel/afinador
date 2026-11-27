@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Compases, patrones de clic y línea de tiempo del metrónomo (Spec 004). Núcleo 100% puro.
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Catálogo de tipos de acorde y ortografía (Spec 003). Núcleo 100% puro.
  * Fórmulas en grados respecto de la raíz; las notas se derivan por intervalos (intervals.ts).

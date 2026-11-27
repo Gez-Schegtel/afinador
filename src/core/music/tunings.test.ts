@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { describe, expect, it } from 'vitest';
 import { TARGET_NOTE_MAX_MIDI, TARGET_NOTE_MIN_MIDI } from './notes';
 import { pitchClassOf, spelledToMidi } from './spelling';

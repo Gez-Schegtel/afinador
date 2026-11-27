@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Registro mínimo de actividad de audio (afinador / metrónomo). Sirve para no recargar la app
  * por una actualización del Service Worker mientras el usuario está afinando o tocando.

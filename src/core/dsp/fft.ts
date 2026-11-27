@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * FFT Radix-2 Cooley–Tukey en doble precisión (Float64Array) sin asignaciones por cuadro.
  * Permite calcular la autocorrelación lineal exacta en O(N log N) mediante el

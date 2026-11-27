@@ -50,9 +50,11 @@ Antes de cada `commit` y `push` a `main`, ejecutá y verificá con código de sa
 
 ```bash
 npm test -- --run
-npm run cap:sync
 VITE_BASE_PATH=/afinador/ npm run build
+npm run cap:sync
 git status
 ```
+
+El build de GitHub Pages va **antes** de `cap:sync`: así `dist/` termina compilado con la base `/` que usa Capacitor, y un `npx cap copy` / `cap run` posterior no empaqueta rutas `/afinador/…` (que dejarían el APK en blanco).
 
 Si modificaste interfaz o estilos (`src/components/`, `src/App.tsx`, `src/index.css`), verificá visualmente tanto escritorio (`1440×900`) como móvil (`412×915`) antes de dar la tarea por finalizada.

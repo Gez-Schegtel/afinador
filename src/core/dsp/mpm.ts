@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Motor DSP de Alta Precisión e Inmunidad Acústica (Float64) para Guitarra y Bajo:
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Intervalos con ortografía (Spec 003). Núcleo 100% puro.
  *

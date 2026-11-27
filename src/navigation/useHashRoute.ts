@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { useCallback, useEffect, useState } from 'react';
 import { parseRoute, routeToHash, type AppRoute } from './routes';
 

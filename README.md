@@ -137,8 +137,12 @@ El proyecto incluye la capa nativa `android/` (libre del plugin propietario `goo
   git push origin v0.1.0
   ```
   el workflow compila el `.apk` y crea automáticamente el *Release* público en GitHub adjuntando `afinador-v0.1.0.apk` y `afinador-v0.1.0.apk.sha256`.
-* **Firma criptográfica propia (recomendada para versiones definitivas):**
-  Si configurás los *Secrets* del repositorio (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), el CI firmará automáticamente el `.apk` con tu llave privada; si aún no están definidos, utiliza una firma de respaldo instalable para que puedas probar el `.apk` de inmediato.
+* **Checklist para publicar una versión `vX.Y.Z`:**
+  1. Actualizar `version` en `package.json` y, en `android/app/build.gradle`, `versionName "X.Y.Z"` y `versionCode` = `X·10000 + Y·100 + Z` (F-Droid exige que sea creciente). El test `src/version.test.ts` falla si no coinciden.
+  2. Configurar los *Secrets* de firma (ver abajo): **los tags `v*` fallan a propósito sin ellos**, para no publicar un `.apk` con una firma debug irrepetible que impediría actualizar.
+  3. Crear y subir el tag (`git tag vX.Y.Z && git push origin vX.Y.Z`).
+* **Firma criptográfica propia (obligatoria para versiones publicadas):**
+  Si configurás los *Secrets* del repositorio (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), el CI firmará automáticamente el `.apk` con tu llave privada. Sin ellos, los builds de `main` usan una firma de respaldo para probar el `.apk` de inmediato (cada build tiene una firma distinta, así que no se actualizan entre sí); los tags de versión, en cambio, se detienen con un error.
   Para generar tu propio keystore una sola vez en Linux:
   ```bash
   keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias afinador

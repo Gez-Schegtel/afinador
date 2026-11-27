@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Estabilizador de tono estilo pedal de escenario (Boss TU-3 / Korg Pitchblack):
  *

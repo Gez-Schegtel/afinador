@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Etapa de entrada del análisis (puro, sin APIs del navegador): pasa-banda Butterworth de
  * 2º orden en cascada (24 Hz – 1800 Hz), decimación entera hacia ~44.1/48 kHz y ventana

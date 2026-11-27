@@ -22,5 +22,5 @@ Este directorio centraliza el diseño de nuevas funcionalidades y mejoras del pr
 3. Una vez que el spec pasa a `Aprobado`, se implementa siguiendo sus criterios de aceptación.
 4. Al finalizar la implementación:
    - Se marca el spec como `Estado: Implementado`.
-   - Se agregan/actualizan los tests en `src/core/` y el build (`npm test -- --run && npm run cap:sync && VITE_BASE_PATH=/afinador/ npm run build`).
+   - Se agregan/actualizan los tests en `src/core/` y el build (`npm test -- --run && VITE_BASE_PATH=/afinador/ npm run build && npm run cap:sync`).
    - Se actualizan [`ROADMAP.md`](../../ROADMAP.md) y [`README.md`](../../README.md).

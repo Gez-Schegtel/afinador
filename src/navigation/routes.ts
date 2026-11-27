@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Rutas de la app basadas en el fragmento (#) de la URL (Spec 006). Núcleo puro.
  * Funcionan igual en `/` (Capacitor/local) y en `/afinador/` (GitHub Pages) sin reglas de servidor.

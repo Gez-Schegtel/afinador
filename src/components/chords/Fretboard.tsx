@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import type { CSSProperties } from 'react';
 import { formatSpelledNote } from '../../core/music/spelling';
 import { stringLabel, type TuningDefinition } from '../../core/music/tunings';

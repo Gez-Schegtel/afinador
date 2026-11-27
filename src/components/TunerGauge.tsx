@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { useEffect, useRef } from 'react';
 import type { ChromaticMatch, NoteDescriptor } from '../core/music/notes';
 

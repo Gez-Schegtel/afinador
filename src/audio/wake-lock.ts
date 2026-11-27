@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Gestión segura de Screen Wake Lock API para evitar que Android apague la pantalla
  * mientras el usuario tiene ambas manos ocupadas afinando la guitarra.

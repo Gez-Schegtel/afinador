@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import pitchWorkletUrl from './pitch-worklet.ts?worker&url';
 import type { PitchResult } from '../core/dsp/mpm';
 import { PitchSmoother, type SmoothedPitch } from '../core/dsp/smoother';

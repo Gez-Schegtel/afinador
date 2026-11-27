@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 import type { Barre } from '../../core/music/voicings';
 
 interface ChordDiagramProps {

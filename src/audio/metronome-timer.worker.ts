@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Temporizador del metrónomo (Spec 004). Corre en un Web Worker porque sus temporizadores no se
  * estrangulan como los del hilo principal cuando la pestaña queda en segundo plano.

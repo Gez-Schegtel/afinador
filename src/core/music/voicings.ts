@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * Generador de digitaciones (voicings) para instrumentos de cuerda (Spec 003). Núcleo 100% puro.
  *

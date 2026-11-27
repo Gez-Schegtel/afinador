@@ -59,6 +59,12 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 ## 📋 Próximos Hitos y Backlog
 
 - [ ] **Lanzamiento `v0.1.0` en GitHub Releases con firma propia:** generar `release.jks`, configurar los *Secrets* en GitHub y crear el tag `v0.1.0` para publicar el primer `.apk` oficial firmado.
+- [ ] **Verificación en dispositivo Android (APK):** pruebas que el CI y Chromium de escritorio no pueden cubrir:
+  - costo real del análisis en el `AudioWorklet` en un teléfono de gama media (con `npm run bench` como referencia de escritorio: ~1.3 ms por cuadro) y, si hubiera cortes, evaluar `latencyHint: 'playback'` (la salida del afinador es silenciosa);
+  - botón «Atrás» de Android con las rutas por *hash* (sin el plugin `@capacitor/app`);
+  - metrónomo con la pantalla bloqueada o la app en segundo plano;
+  - si la WebView soporta la *Screen Wake Lock API*: en ese caso, reemplazar `FLAG_KEEP_SCREEN_ON` (hoy mantiene la pantalla encendida aunque el afinador esté detenido) por el bloqueo que ya usa la web;
+  - si la app funciona sin el permiso `INTERNET` (es 100% offline): quitarlo haría cumplir esa promesa a nivel del sistema operativo.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
 - [ ] **Spec 007 — Identidad visual *Endurend Musical Gadgets***.
 - [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
