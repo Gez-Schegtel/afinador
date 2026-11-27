@@ -42,7 +42,7 @@ export function CalibrationControl({
         <div className="calibration-title-group">
           <span className="calibration-label">PITCH / CALIBRACIÓN</span>
           <span className="calibration-range">
-            {MIN_A4_HZ}–{MAX_A4_HZ} Hz (paso 0.5 / 1 Hz)
+            {MIN_A4_HZ}–{MAX_A4_HZ} Hz (paso 0.5 / 1 Hz; 0.1 Hz escribiendo)
           </span>
         </div>
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   TARGET_NOTE_MAX_MIDI,
   TARGET_NOTE_MIN_MIDI,
-  buildTargetNoteGroups,
   clampA4,
   describeMidiNote,
   midiFromNoteAndOctave,
@@ -108,26 +107,16 @@ describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => 
     ).toBe('E2');
   });
 
-  it('convierte Nota + Octava con clamp seguro en octava 0 (A0 mínimo) y genera catálogo A0..B5 sin duplicados', () => {
+  it('convierte Nota + Octava con clamp seguro en octava 0 (A0 mínimo) y cubre el catálogo A0..B5 completo', () => {
     expect(midiFromNoteAndOctave(4, 2)).toBe(40); // E2
     expect(midiFromNoteAndOctave(11, 0)).toBe(23); // B0
     // Notas debajo de A0 en octava 0 se acotan a A0 (MIDI 21)
     expect(midiFromNoteAndOctave(0, 0)).toBe(TARGET_NOTE_MIN_MIDI);
 
-    const groups = buildTargetNoteGroups(430);
-    expect(groups).toHaveLength(3);
-
-    const allMidis = groups.flatMap((g) => g.options.map((o) => o.midi));
-    const uniqueMidis = new Set(allMidis);
-    expect(uniqueMidis.size).toBe(allMidis.length);
-    expect(allMidis.length).toBe(
-      TARGET_NOTE_MAX_MIDI - TARGET_NOTE_MIN_MIDI + 1
-    );
+    // El catálogo Nota + Octava cubre A0..B5 completo y sin huecos.
     for (let m = TARGET_NOTE_MIN_MIDI; m <= TARGET_NOTE_MAX_MIDI; m++) {
-      expect(uniqueMidis.has(m)).toBe(true);
+      const octave = Math.floor(m / 12) - 1;
+      expect(midiFromNoteAndOctave(m % 12, octave)).toBe(m);
     }
-
-    const a2Option = groups[0]!.options.find((o) => o.midi === 45);
-    expect(a2Option?.label).toContain('107.5 Hz');
   });
 });

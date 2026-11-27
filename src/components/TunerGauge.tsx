@@ -56,20 +56,27 @@ export function TunerGauge({
     let isCoarseScale = false;
     let lastTime = performance.now();
 
+    // Tamaños en píxeles CSS, actualizados solo al redimensionar (no se mide el layout por cuadro).
+    const strobeSize = { w: 1, h: 1 };
+    const arcSize = { w: 1, h: 1 };
+
     const resizeOne = (
       canvas: HTMLCanvasElement,
-      ctx: CanvasRenderingContext2D
+      ctx: CanvasRenderingContext2D,
+      size: { w: number; h: number }
     ) => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      size.w = rect.width;
+      size.h = rect.height;
     };
 
     const resizeAll = () => {
-      resizeOne(strobeCanvas, strobeCtx);
-      resizeOne(arcCanvas, arcCtx);
+      resizeOne(strobeCanvas, strobeCtx, strobeSize);
+      resizeOne(arcCanvas, arcCtx, arcSize);
     };
 
     resizeAll();
@@ -114,8 +121,8 @@ export function TunerGauge({
       }
 
       // --- A. VISOR ESTROBOSCÓPICO FINO ---
-      const sw = strobeCanvas.getBoundingClientRect().width;
-      const sh = strobeCanvas.getBoundingClientRect().height;
+      const sw = strobeSize.w;
+      const sh = strobeSize.h;
       strobeCtx.clearRect(0, 0, sw, sh);
 
       if (active && !frame?.isHolding) {
@@ -163,8 +170,8 @@ export function TunerGauge({
       strobeCtx.restore();
 
       // --- B. ARCO DE LEDs + AGUJA AMORTIGUADA CON AUTO-ESCALA ---
-      const w = arcCanvas.getBoundingClientRect().width;
-      const h = arcCanvas.getBoundingClientRect().height;
+      const w = arcSize.w;
+      const h = arcSize.h;
       arcCtx.clearRect(0, 0, w, h);
 
       let targetCents = 0;
@@ -347,7 +354,7 @@ export function TunerGauge({
     } else if (isManual && Math.abs(displayMatch.cents) > 55) {
       const semitonesOff = (Math.abs(displayMatch.cents) / 100).toFixed(1);
       badgeLabel = isFlat
-        ? `MUY BAJO (${semitonesOff} st) · SUBIR ↑↑`
+        ? `MUY BAJO (−${semitonesOff} st) · SUBIR ↑↑`
         : `MUY ALTO (+${semitonesOff} st) · BAJAR ↓↓`;
     } else {
       badgeLabel = isFlat ? 'BAJO · SUBIR ↑' : 'ALTO · BAJAR ↓';

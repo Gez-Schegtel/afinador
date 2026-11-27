@@ -52,6 +52,16 @@ select {
   color: inherit;
 }
 
+/* Foco visible solo al navegar con teclado (U-02) */
+:focus-visible {
+  outline: 2px solid var(--led-cyan);
+  outline-offset: 2px;
+}
+
+.hz-input-wrap:focus-within {
+  border-color: var(--led-cyan);
+}
+
 .pedal-chassis {
   max-width: 480px;
   min-height: 100dvh;
@@ -1481,5 +1491,12 @@ select {
   /* Escritorio: mástil a la izquierda y resultado a la derecha. */
   .identify-board {
     order: -1;
+  }
+}
+
+/* El aviso de atajo de teclado no tiene sentido en pantallas táctiles grandes (tablets) */
+@media (hover: none), (pointer: coarse) {
+  .desktop-shortcut-hint {
+    display: none !important;
   }
 }

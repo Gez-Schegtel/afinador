@@ -27,6 +27,7 @@ import {
   useSpaceShortcut,
 } from '../shell/AppShell';
 import { useMetronome } from '../shell/MetronomeContext';
+import { setAudioBusy } from '../shell/audio-activity';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
 const STORAGE_TARGET_MIDI_KEY = 'afinador_target_midi';
@@ -346,6 +347,12 @@ export function TunerSection() {
   }, []);
 
   useSpaceShortcut(toggleListening);
+
+  useEffect(() => {
+    setAudioBusy('tuner', engineStatus !== 'idle');
+  }, [engineStatus]);
+
+  useEffect(() => () => setAudioBusy('tuner', false), []);
 
   const isBusy = engineStatus === 'starting' || engineStatus === 'stopping';
   const footswitchLabel =

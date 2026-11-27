@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { MetronomeEngine } from '../audio/metronome-engine';
+import { setAudioBusy } from './audio-activity';
 import {
   resolveMetronomeSettings,
   type MetronomeSettings,
@@ -72,6 +73,10 @@ export function MetronomeProvider({ children }: { children: ReactNode }) {
       // Ignorar si el almacenamiento está restringido
     }
   }, [settings]);
+
+  useEffect(() => {
+    setAudioBusy('metronome', running);
+  }, [running]);
 
   useEffect(
     () => () => {
