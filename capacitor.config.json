@@ -1,0 +1,9 @@
+{
+  "appId": "org.gezschegtel.afinador",
+  "appName": "Afinador",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

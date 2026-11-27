@@ -1,0 +1,28 @@
+{
+  "name": "afinador",
+  "private": true,
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "description": "Afinador cromático estroboscópico estilo pedal de alta precisión (< 0.05 cents) para guitarra y bajo.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest",
+    "android:usb": "adb reverse tcp:5173 tcp:5173 && echo 'Puerto 5173 reenviado por USB. Abrí http://localhost:5173 en el navegador de tu Android.'"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.6",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^4.1.12"
+  }
+}
