@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TunerEngine } from './audio/tuner-engine';
 import {
   DEFAULT_A4_HZ,
@@ -227,16 +227,37 @@ export function App() {
     };
   }, []);
 
-  const toggleListening = async () => {
+  const toggleListening = useCallback(async () => {
     setErrorMsg(null);
     const engine = engineRef.current;
     if (!engine) return;
-    if (isListening) {
+    if (engine.isRunning()) {
       await engine.stop();
     } else {
       await engine.start();
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'SELECT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'BUTTON'
+      ) {
+        return;
+      }
+      e.preventDefault();
+      void toggleListening();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [toggleListening]);
 
   return (
     <div className="pedal-chassis">
@@ -257,13 +278,18 @@ export function App() {
           </div>
         </div>
 
-        <div className="signal-meter" title="Nivel de señal de entrada">
-          <span className="signal-dot" data-active={isListening} />
-          <div className="signal-track">
-            <div
-              className="signal-fill"
-              style={{ width: `${Math.round(inputLevel * 100)}%` }}
-            />
+        <div className="header-right">
+          <span className="desktop-shortcut-hint">
+            Espacio: Activar / Detener
+          </span>
+          <div className="signal-meter" title="Nivel de señal de entrada">
+            <span className="signal-dot" data-active={isListening} />
+            <div className="signal-track">
+              <div
+                className="signal-fill"
+                style={{ width: `${Math.round(inputLevel * 100)}%` }}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -274,37 +300,40 @@ export function App() {
         </div>
       )}
 
-      <main className="pedal-body">
+      <div className="pedal-workspace">
         <TunerGauge
           frameRef={gaugeFrameRef}
           displayMatch={displayMatch}
           lockedNote={lockedNote}
+          isManual={isManual}
           isListening={isListening}
           isHolding={isHolding}
           a4Hz={a4Hz}
         />
 
-        <TargetNoteControl
-          isManual={isManual}
-          targetMidi={targetMidi}
-          a4Hz={a4Hz}
-          onToggleMode={setIsManual}
-          onSelectTargetMidi={setTargetMidi}
-        />
+        <div className="pedal-controls-col">
+          <TargetNoteControl
+            isManual={isManual}
+            targetMidi={targetMidi}
+            a4Hz={a4Hz}
+            onToggleMode={setIsManual}
+            onSelectTargetMidi={setTargetMidi}
+          />
 
-        <CalibrationControl a4Hz={a4Hz} onChange={setA4Hz} />
-      </main>
+          <CalibrationControl a4Hz={a4Hz} onChange={setA4Hz} />
 
-      <footer className="pedal-footswitch-area">
-        <button
-          type="button"
-          className={`footswitch-btn ${isListening ? 'is-listening' : ''}`}
-          onClick={() => void toggleListening()}
-        >
-          <span className="footswitch-led" />
-          {isListening ? 'DETENER ENTRADA' : 'ACTIVAR AFINADOR'}
-        </button>
-      </footer>
+          <footer className="pedal-footswitch-area">
+            <button
+              type="button"
+              className={`footswitch-btn ${isListening ? 'is-listening' : ''}`}
+              onClick={() => void toggleListening()}
+            >
+              <span className="footswitch-led" />
+              {isListening ? 'DETENER ENTRADA' : 'ACTIVAR AFINADOR'}
+            </button>
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }

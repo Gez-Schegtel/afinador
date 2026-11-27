@@ -12,33 +12,33 @@ interface TunerGaugeProps {
   frameRef: React.RefObject<GaugeFrameData>;
   displayMatch: ChromaticMatch | null;
   lockedNote?: NoteDescriptor | null;
+  isManual?: boolean;
   isListening: boolean;
   isHolding: boolean;
   a4Hz: number;
 }
 
-const MAX_DISPLAY_CENTS = 50;
 const MAX_ARC_RAD = (68 * Math.PI) / 180;
-const LED_COUNT = 41; // -50 a +50 en pasos de 2.5 cents
+const LED_COUNT = 41; // -max a +max
 
-function centsToAngle(cents: number): number {
-  const clamped = Math.max(
-    -MAX_DISPLAY_CENTS,
-    Math.min(MAX_DISPLAY_CENTS, cents)
-  );
-  return -Math.PI / 2 + (clamped / MAX_DISPLAY_CENTS) * MAX_ARC_RAD;
+function centsToAngle(cents: number, maxDisplayCents: number): number {
+  const clamped = Math.max(-maxDisplayCents, Math.min(maxDisplayCents, cents));
+  return -Math.PI / 2 + (clamped / maxDisplayCents) * MAX_ARC_RAD;
 }
 
 export function TunerGauge({
   frameRef,
   displayMatch,
   lockedNote = null,
+  isManual = false,
   isListening,
   isHolding,
   a4Hz,
 }: TunerGaugeProps) {
   const strobeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const arcCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isManualRef = useRef(isManual);
+  isManualRef.current = isManual;
 
   useEffect(() => {
     const strobeCanvas = strobeCanvasRef.current;
@@ -53,6 +53,7 @@ export function TunerGauge({
     let currentNeedleCents = 0;
     let strobePhase = 0;
     let needleOpacity = 0.25;
+    let isCoarseScale = false;
     let lastTime = performance.now();
 
     const resizeOne = (
@@ -83,16 +84,32 @@ export function TunerGauge({
       const frame = frameRef.current;
       const match = frame?.match ?? null;
       const active = match !== null;
+      const manual = isManualRef.current;
       const lockedInTune = active && match.direction === 'in-tune';
+
+      // Auto-rango con histéresis en modo Manual:
+      // > ±55 ct entra a escala amplia (±600 ct = ±6 st); < ±46 ct vuelve a escala fina (±50 ct)
+      if (manual && active) {
+        const absCents = Math.abs(match.cents);
+        if (!isCoarseScale && absCents > 55) {
+          isCoarseScale = true;
+        } else if (isCoarseScale && absCents < 46) {
+          isCoarseScale = false;
+        }
+      } else {
+        isCoarseScale = false;
+      }
+
+      const activeScaleMax = isCoarseScale ? 600 : 50;
 
       let accentColor = '#64748b';
       if (active) {
         if (lockedInTune) {
-          accentColor = '#10b981'; // Esmeralda clavado
+          accentColor = '#10b981';
         } else if (match.direction === 'flat') {
-          accentColor = '#f59e0b'; // Ámbar bajo
+          accentColor = '#f59e0b';
         } else {
-          accentColor = '#fb7185'; // Coral alto
+          accentColor = '#fb7185';
         }
       }
 
@@ -102,7 +119,6 @@ export function TunerGauge({
       strobeCtx.clearRect(0, 0, sw, sh);
 
       if (active && !frame?.isHolding) {
-        // Zona muerta ultra-fina (±0.35 ct) para que al clavar la nota el estroboscopio quede inmóvil
         const effectiveDrift =
           Math.abs(match.cents) < 0.35
             ? 0
@@ -146,19 +162,17 @@ export function TunerGauge({
       strobeCtx.stroke();
       strobeCtx.restore();
 
-      // --- B. ARCO DE LEDs + AGUJA AMORTIGUADA TIPO PEDAL ---
+      // --- B. ARCO DE LEDs + AGUJA AMORTIGUADA CON AUTO-ESCALA ---
       const w = arcCanvas.getBoundingClientRect().width;
       const h = arcCanvas.getBoundingClientRect().height;
       arcCtx.clearRect(0, 0, w, h);
 
-      // Retención magnética suave en el centro cuando está dentro de la zona AFINADO,
-      // igual que la aguja amortiguada de un pedal Boss TU-3 / Korg Pitchblack.
       let targetCents = 0;
       if (match) {
         targetCents =
           lockedInTune && Math.abs(match.cents) <= 1.8
             ? match.cents * 0.35
-            : match.clampedCents;
+            : Math.max(-activeScaleMax, Math.min(activeScaleMax, match.cents));
       }
 
       const dampingRate = active ? 7.5 : 5.0;
@@ -174,9 +188,10 @@ export function TunerGauge({
       const radius = Math.min(w * 0.44, h * 0.76);
 
       const midLed = (LED_COUNT - 1) / 2;
+      const ledTolerance = activeScaleMax * 0.052;
       for (let i = 0; i < LED_COUNT; i++) {
-        const ledCents = ((i - midLed) / midLed) * MAX_DISPLAY_CENTS;
-        const angle = centsToAngle(ledCents);
+        const ledCents = ((i - midLed) / midLed) * activeScaleMax;
+        const angle = centsToAngle(ledCents, activeScaleMax);
         const isCenterLed = i === midLed;
         const distFromNeedle = Math.abs(currentNeedleCents - ledCents);
 
@@ -187,7 +202,7 @@ export function TunerGauge({
           if (isCenterLed && lockedInTune) {
             lit = true;
             ledColor = '#10b981';
-          } else if (!lockedInTune && distFromNeedle <= 2.6) {
+          } else if (!lockedInTune && distFromNeedle <= ledTolerance) {
             lit = true;
             ledColor = accentColor;
           } else if (
@@ -230,16 +245,37 @@ export function TunerGauge({
       arcCtx.textBaseline = 'middle';
       arcCtx.font = '600 10.5px ui-monospace, SFMono-Regular, Menlo, monospace';
 
-      for (const c of [-50, -30, -10, 0, 10, 30, 50]) {
-        const angle = centsToAngle(c);
-        const labelR = radius + 19;
+      const scaleTicks = isCoarseScale
+        ? [-600, -400, -200, 0, 200, 400, 600]
+        : [-50, -30, -10, 0, 10, 30, 50];
+
+      for (const c of scaleTicks) {
+        const angle = centsToAngle(c, activeScaleMax);
+        const labelR = radius + 21;
         const lx = cx + Math.cos(angle) * labelR;
         const ly = cy + Math.sin(angle) * labelR;
-        arcCtx.fillStyle = c === 0 ? '#10b981' : '#64748b';
-        arcCtx.fillText(c > 0 ? `+${c}` : `${c}`, lx, ly);
+        arcCtx.fillStyle = c === 0 ? '#10b981' : isCoarseScale ? '#94a3b8' : '#64748b';
+        const label = isCoarseScale
+          ? c === 0
+            ? '0'
+            : `${c > 0 ? '+' : ''}${c / 100}st`
+          : c > 0
+            ? `+${c}`
+            : `${c}`;
+        arcCtx.fillText(label, lx, ly);
       }
 
-      const needleAngle = centsToAngle(currentNeedleCents);
+      if (isCoarseScale) {
+        arcCtx.font = '700 9.5px system-ui, -apple-system, sans-serif';
+        arcCtx.fillStyle = '#38bdf8';
+        arcCtx.fillText(
+          'ESCALA AMPLIA (±6 SEMITONOS)',
+          cx,
+          cy - radius * 0.44
+        );
+      }
+
+      const needleAngle = centsToAngle(currentNeedleCents, activeScaleMax);
       const needleLen = radius - 14;
       const nx = cx + Math.cos(needleAngle) * needleLen;
       const ny = cy + Math.sin(needleAngle) * needleLen;
@@ -304,6 +340,20 @@ export function TunerGauge({
       ? `${lockedNote.frequency.toFixed(1)} Hz`
       : '— Hz';
 
+  let badgeLabel = '';
+  if (displayMatch) {
+    if (isInTune) {
+      badgeLabel = '✓ AFINADO';
+    } else if (isManual && Math.abs(displayMatch.cents) > 55) {
+      const semitonesOff = (Math.abs(displayMatch.cents) / 100).toFixed(1);
+      badgeLabel = isFlat
+        ? `MUY BAJO (${semitonesOff} st) · SUBIR ↑↑`
+        : `MUY ALTO (+${semitonesOff} st) · BAJAR ↓↓`;
+    } else {
+      badgeLabel = isFlat ? 'BAJO · SUBIR ↑' : 'ALTO · BAJAR ↓';
+    }
+  }
+
   return (
     <section className="pedal-screen" aria-label="Visor del afinador cromático">
       <div
@@ -362,13 +412,7 @@ export function TunerGauge({
           {displayMatch ? (
             <>
               <span className="latin-pill">{displayMatch.note.latinName}</span>
-              <span className={`lock-badge ${statusClass}`}>
-                {isInTune
-                  ? '✓ AFINADO'
-                  : isFlat
-                    ? 'BAJO · SUBIR ↑'
-                    : 'ALTO · BAJAR ↓'}
-              </span>
+              <span className={`lock-badge ${statusClass}`}>{badgeLabel}</span>
             </>
           ) : lockedNote ? (
             <>

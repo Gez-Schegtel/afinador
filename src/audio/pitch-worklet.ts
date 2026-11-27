@@ -158,11 +158,11 @@ class PitchWorkletProcessor extends AudioWorkletProcessor {
     const result =
       this.targetHz !== null && this.targetHz > 0
         ? this.detector.detect(this.analysisFrame, sampleRate, {
-            minFreq: Math.max(25, this.targetHz * Math.pow(2, -5 / 12)),
+            minFreq: Math.max(25, this.targetHz * Math.pow(2, -11.5 / 12)),
             maxFreq: Math.min(2200, this.targetHz * Math.pow(2, 5 / 12)),
             minRms: 0.0025,
-            minClarity: 0.6,
-            clarityThreshold: 0.85,
+            minClarity: 0.58,
+            clarityThreshold: 0.92,
           })
         : this.detector.detect(this.analysisFrame, sampleRate);
     this.port.postMessage(result);

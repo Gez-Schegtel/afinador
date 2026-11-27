@@ -125,7 +125,7 @@ export class PitchSmoother {
     }
 
     const requiredClarity = this.manualMode
-      ? 0.6
+      ? 0.58
       : this.smoothedSemi === null
         ? 0.75
         : 0.68;
@@ -138,13 +138,24 @@ export class PitchSmoother {
     ) {
       const rawSemi = freqToLogSemitones(frequency);
 
-      // Si salta a otra cuerda/nota (> 65 cents), exigir 3 cuadros coherentes antes de saltar
+      // Si salta a otra cuerda/nota (> 65 cents), confirmar rápido en modo Manual (2 cuadros) o estricto en Auto (3)
       if (
         this.smoothedSemi !== null &&
         Math.abs(rawSemi - this.smoothedSemi) > this.jumpSemitones
       ) {
         this.jumpCandidates.push(rawSemi);
-        if (this.jumpCandidates.length >= 3) {
+        if (this.manualMode) {
+          if (this.jumpCandidates.length >= 2) {
+            const prev = this.jumpCandidates[this.jumpCandidates.length - 2]!;
+            if (Math.abs(rawSemi - prev) < 0.5) {
+              this.history.length = 0;
+              this.jumpCandidates.length = 0;
+              this.smoothedSemi = 0.5 * (prev + rawSemi);
+            } else if (this.jumpCandidates.length > 3) {
+              this.jumpCandidates.shift();
+            }
+          }
+        } else if (this.jumpCandidates.length >= 3) {
           const first = this.jumpCandidates[this.jumpCandidates.length - 3]!;
           const second = this.jumpCandidates[this.jumpCandidates.length - 2]!;
           if (

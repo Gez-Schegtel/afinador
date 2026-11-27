@@ -46,7 +46,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
   color: inherit;
 }
@@ -98,6 +99,16 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.desktop-shortcut-hint {
+  display: none;
+}
+
 .signal-meter {
   display: flex;
   align-items: center;
@@ -141,8 +152,14 @@ input {
   line-height: 1.4;
 }
 
-.pedal-body {
+.pedal-workspace {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pedal-controls-col {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -603,7 +620,15 @@ input {
 .target-select-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+.target-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .target-select-label {
@@ -612,14 +637,25 @@ input {
   color: var(--text-secondary);
 }
 
-.target-select-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.target-hz-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--led-cyan);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 2px 8px;
+  border-radius: 7px;
+}
+
+.note-octave-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 8px;
 }
 
 .target-select {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   height: 40px;
   border-radius: 10px;
@@ -635,6 +671,53 @@ input {
 
 .target-select:focus {
   border-color: var(--led-cyan);
+}
+
+.quick-strings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-strings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-group-tag {
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.quick-string-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+
+.quick-string-btn {
+  flex: 1 1 auto;
+  min-height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-screen);
+  color: var(--text-secondary);
+  font-size: 0.69rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+.quick-string-btn.is-active {
+  border-color: var(--led-cyan);
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--text-primary);
 }
 
 /* Footswitch del pedal */
@@ -682,4 +765,73 @@ input {
 .footswitch-btn.is-listening .footswitch-led {
   background: var(--led-red);
   box-shadow: 0 0 10px var(--led-red);
+}
+
+/* Consola de estudio de 2 columnas para escritorio (>= 900px), dejando < 900px móvil intacto */
+@media (min-width: 900px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    background: radial-gradient(
+      circle at 50% 30%,
+      #10192d 0%,
+      var(--bg-outer) 75%
+    );
+  }
+
+  .pedal-chassis {
+    width: 100%;
+    max-width: 1020px;
+    min-height: auto;
+    margin: 0;
+    padding: 22px 26px 26px;
+    border-radius: 26px;
+    border: 1.5px solid var(--border-chassis);
+    box-shadow:
+      0 28px 70px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    gap: 18px;
+  }
+
+  .desktop-shortcut-hint {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-screen);
+    border: 1px solid var(--border-subtle);
+    padding: 4px 9px;
+    border-radius: 7px;
+  }
+
+  .pedal-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr);
+    gap: 22px;
+    align-items: stretch;
+  }
+
+  .pedal-screen {
+    justify-content: center;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+
+  .arc-window {
+    height: 225px;
+  }
+
+  .pedal-controls-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .pedal-footswitch-area {
+    margin-top: auto;
+  }
 }

@@ -149,4 +149,30 @@ describe('PitchSmoother — Estabilidad ante batido acústico real de cuerda', (
       0.08
     );
   });
+
+  it('en modo Manual (-11.5 / +5 st) detecta una cuerda G3 (196 Hz) caída -800 cents (~123.5 Hz) sin saltar al 2º armónico', () => {
+    const sampleRate = 48000;
+    const g3Hz = midiToFrequency(55, 440); // 196.0 Hz
+    const veryLooseHz = g3Hz * Math.pow(2, -800 / 1200); // ~123.47 Hz (8 semitonos abajo)
+    // Fundamental modesta frente a armónicos fuertes (2º = 246.9 Hz, que cae dentro del rango de G3!)
+    const looseSignal = generateInstrumentTone(
+      veryLooseHz,
+      sampleRate,
+      8192,
+      [0.35, 1.0, 0.75, 0.4]
+    );
+
+    const manualResult = detectPitchMPM(looseSignal, sampleRate, {
+      minFreq: Math.max(25, g3Hz * Math.pow(2, -11.5 / 12)),
+      maxFreq: Math.min(2200, g3Hz * Math.pow(2, 5 / 12)),
+      minRms: 0.0025,
+      minClarity: 0.58,
+      clarityThreshold: 0.92,
+    });
+
+    expect(manualResult.frequency).not.toBeNull();
+    expect(
+      Math.abs(centsBetween(manualResult.frequency!, veryLooseHz))
+    ).toBeLessThan(0.1);
+  });
 });

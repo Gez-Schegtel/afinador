@@ -4,7 +4,7 @@ export const DEFAULT_A4_HZ = 440;
 export const QUICK_A4_PRESETS = [430, 432, 440, 442, 444] as const;
 
 export const TARGET_NOTE_MIN_MIDI = 21; // A0
-export const TARGET_NOTE_MAX_MIDI = 76; // E5
+export const TARGET_NOTE_MAX_MIDI = 83; // B5
 
 /**
  * Ventana de entrada al estado AFINADO (±2.5 cents, estándar en pedales Boss TU-3 / Korg).
@@ -45,6 +45,55 @@ const CHROMATIC_SCALE: readonly ChromaticPitchClass[] = [
   { letter: 'A', isSharp: false, displayName: 'A', latinName: 'La' },
   { letter: 'A', isSharp: true, displayName: 'A♯', latinName: 'La♯' },
   { letter: 'B', isSharp: false, displayName: 'B', latinName: 'Si' },
+] as const;
+
+export interface ChromaticNoteOption {
+  noteIndex: number;
+  displayName: string;
+  latinName: string;
+}
+
+export const CHROMATIC_NOTE_OPTIONS: readonly ChromaticNoteOption[] =
+  CHROMATIC_SCALE.map((spec, idx) => ({
+    noteIndex: idx,
+    displayName: spec.displayName,
+    latinName: spec.latinName,
+  }));
+
+export interface OctaveOption {
+  octave: number;
+  label: string;
+}
+
+export const OCTAVE_OPTIONS: readonly OctaveOption[] = [
+  { octave: 0, label: '0 — Subgrave' },
+  { octave: 1, label: '1 — Bajo' },
+  { octave: 2, label: '2 — Grave' },
+  { octave: 3, label: '3 — Media' },
+  { octave: 4, label: '4 — Aguda' },
+  { octave: 5, label: '5 — Sobreaguda' },
+] as const;
+
+export interface QuickStringPreset {
+  label: string;
+  midi: number;
+}
+
+export const QUICK_GUITAR_STRINGS: readonly QuickStringPreset[] = [
+  { label: '6ª E2', midi: 40 },
+  { label: '5ª A2', midi: 45 },
+  { label: '4ª D3', midi: 50 },
+  { label: '3ª G3', midi: 55 },
+  { label: '2ª B3', midi: 59 },
+  { label: '1ª E4', midi: 64 },
+] as const;
+
+export const QUICK_BASS_STRINGS: readonly QuickStringPreset[] = [
+  { label: '5ª B0', midi: 23 },
+  { label: '4ª E1', midi: 28 },
+  { label: '3ª A1', midi: 33 },
+  { label: '2ª D2', midi: 38 },
+  { label: '1ª G2', midi: 43 },
 ] as const;
 
 export type TuningDirection = 'flat' | 'in-tune' | 'sharp';
@@ -116,6 +165,14 @@ export function clampTargetMidi(midi: number): number {
   );
 }
 
+export function midiFromNoteAndOctave(
+  noteIndex: number,
+  octave: number
+): number {
+  const safeNote = ((Math.round(noteIndex) % 12) + 12) % 12;
+  return clampTargetMidi((Math.round(octave) + 1) * 12 + safeNote);
+}
+
 export function midiToFrequency(
   midi: number,
   a4Hz: number = DEFAULT_A4_HZ
@@ -156,8 +213,7 @@ export function describeMidiNote(
 }
 
 /**
- * Construye los grupos de opciones para el menú «Nota objetivo» en modo Manual
- * cubriendo A0 (MIDI 21) hasta E5 (MIDI 76) sin duplicados y con Hz actualizados según A4.
+ * Construye los grupos de opciones para catálogos completos A0..B5 sin duplicados.
  */
 export function buildTargetNoteGroups(
   a4Hz: number = DEFAULT_A4_HZ
@@ -196,7 +252,7 @@ export function buildTargetNoteGroups(
   return [
     { label: 'Guitarra (6ª a 1ª)', options: guitarOptions },
     { label: 'Bajo (5ª a 1ª y Drop D)', options: bassOptions },
-    { label: 'Otras notas cromáticas (A0 – E5)', options: otherOptions },
+    { label: 'Otras notas cromáticas (A0 – B5)', options: otherOptions },
   ];
 }
 

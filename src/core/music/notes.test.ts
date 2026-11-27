@@ -5,6 +5,7 @@ import {
   buildTargetNoteGroups,
   clampA4,
   describeMidiNote,
+  midiFromNoteAndOctave,
   midiToFrequency,
   resolveChromaticNote,
 } from './notes';
@@ -68,20 +69,25 @@ describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => 
     expect(describeMidiNote(69, 432).frequency).toBeCloseTo(432, 6);
   });
 
-  it('mantiene forcedMidi en modo Manual aunque la cuerda esté -220 cents abajo', () => {
-    const e2 = midiToFrequency(40, 440);
-    // Cuerda floja 220 cents por debajo de E2 (cerca de D2 = MIDI 38)
-    const veryFlatE2 = e2 * Math.pow(2, -220 / 1200);
-    const manualMatch = resolveChromaticNote(veryFlatE2, 440, undefined, 40);
+  it('mantiene forcedMidi en modo Manual aunque la cuerda esté -800 cents abajo', () => {
+    const g3 = midiToFrequency(55, 440); // 196 Hz
+    // Cuerda extremadamente floja 8 semitonos por debajo de G3
+    const veryFlatG3 = g3 * Math.pow(2, -800 / 1200);
+    const manualMatch = resolveChromaticNote(veryFlatG3, 440, undefined, 55);
 
-    expect(manualMatch.note.midi).toBe(40);
-    expect(manualMatch.note.fullName).toBe('E2');
-    expect(manualMatch.cents).toBeCloseTo(-220, 4);
+    expect(manualMatch.note.midi).toBe(55);
+    expect(manualMatch.note.fullName).toBe('G3');
+    expect(manualMatch.cents).toBeCloseTo(-800, 4);
     expect(manualMatch.clampedCents).toBe(-50);
     expect(manualMatch.direction).toBe('flat');
   });
 
-  it('genera el catálogo de Nota objetivo cubriendo A0..E5 sin duplicados', () => {
+  it('convierte Nota + Octava con clamp seguro en octava 0 (A0 mínimo) y genera catálogo A0..B5 sin duplicados', () => {
+    expect(midiFromNoteAndOctave(4, 2)).toBe(40); // E2
+    expect(midiFromNoteAndOctave(11, 0)).toBe(23); // B0
+    // Notas debajo de A0 en octava 0 se acotan a A0 (MIDI 21)
+    expect(midiFromNoteAndOctave(0, 0)).toBe(TARGET_NOTE_MIN_MIDI);
+
     const groups = buildTargetNoteGroups(430);
     expect(groups).toHaveLength(3);
 
@@ -95,7 +101,6 @@ describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => 
       expect(uniqueMidis.has(m)).toBe(true);
     }
 
-    // Verifica que las etiquetas reflejan la calibración A4 = 430 Hz (A2 = 107.5 Hz)
     const a2Option = groups[0]!.options.find((o) => o.midi === 45);
     expect(a2Option?.label).toContain('107.5 Hz');
   });

@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import {
-  TARGET_NOTE_MAX_MIDI,
-  TARGET_NOTE_MIN_MIDI,
-  buildTargetNoteGroups,
-  clampTargetMidi,
+  CHROMATIC_NOTE_OPTIONS,
+  OCTAVE_OPTIONS,
+  QUICK_BASS_STRINGS,
+  QUICK_GUITAR_STRINGS,
+  describeMidiNote,
+  midiFromNoteAndOctave,
 } from '../core/music/notes';
 
 interface TargetNoteControlProps {
@@ -21,7 +23,13 @@ export function TargetNoteControl({
   onToggleMode,
   onSelectTargetMidi,
 }: TargetNoteControlProps) {
-  const groups = useMemo(() => buildTargetNoteGroups(a4Hz), [a4Hz]);
+  const currentNote = useMemo(
+    () => describeMidiNote(targetMidi, a4Hz),
+    [targetMidi, a4Hz]
+  );
+
+  const currentNoteIndex = ((targetMidi % 12) + 12) % 12;
+  const currentOctave = currentNote.octave;
 
   return (
     <section
@@ -33,7 +41,7 @@ export function TargetNoteControl({
           <span className="calibration-label">MODO DE AFINACIÓN</span>
           <span className="calibration-range">
             {isManual
-              ? 'Manual · Filtro DSP acotado a ±5 semitonos'
+              ? 'Manual · Detecta hasta −11.5 / +5 st'
               : 'Automático · Detección libre (27.5–2000 Hz)'}
           </span>
         </div>
@@ -64,53 +72,92 @@ export function TargetNoteControl({
 
       {isManual && (
         <div className="target-select-row">
-          <label className="target-select-label" htmlFor="target-note-select">
-            Nota objetivo
-          </label>
+          <div className="target-summary-header">
+            <span className="target-select-label">Nota objetivo</span>
+            <span className="target-hz-badge">
+              {currentNote.fullName} · {currentNote.latinName} —{' '}
+              {currentNote.frequency.toFixed(1)} Hz
+            </span>
+          </div>
 
-          <div className="target-select-controls">
-            <button
-              type="button"
-              className="step-btn"
-              onClick={() => onSelectTargetMidi(clampTargetMidi(targetMidi - 1))}
-              disabled={targetMidi <= TARGET_NOTE_MIN_MIDI}
-              aria-label="Bajar un semitono"
-              title="Bajar un semitono"
-            >
-              −
-            </button>
-
+          <div className="note-octave-grid">
             <select
-              id="target-note-select"
               className="target-select"
-              value={targetMidi}
+              value={currentNoteIndex}
               onChange={(e) =>
                 onSelectTargetMidi(
-                  clampTargetMidi(Number.parseInt(e.target.value, 10))
+                  midiFromNoteAndOctave(
+                    Number.parseInt(e.target.value, 10),
+                    currentOctave
+                  )
                 )
               }
+              aria-label="Nota objetivo (nombre)"
             >
-              {groups.map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.options.map((opt) => (
-                    <option key={opt.midi} value={opt.midi}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </optgroup>
+              {CHROMATIC_NOTE_OPTIONS.map((opt) => (
+                <option
+                  key={opt.noteIndex}
+                  value={opt.noteIndex}
+                  disabled={currentOctave === 0 && opt.noteIndex < 9}
+                >
+                  {opt.displayName} · {opt.latinName}
+                </option>
               ))}
             </select>
 
-            <button
-              type="button"
-              className="step-btn"
-              onClick={() => onSelectTargetMidi(clampTargetMidi(targetMidi + 1))}
-              disabled={targetMidi >= TARGET_NOTE_MAX_MIDI}
-              aria-label="Subir un semitono"
-              title="Subir un semitono"
+            <select
+              className="target-select"
+              value={currentOctave}
+              onChange={(e) =>
+                onSelectTargetMidi(
+                  midiFromNoteAndOctave(
+                    currentNoteIndex,
+                    Number.parseInt(e.target.value, 10)
+                  )
+                )
+              }
+              aria-label="Octava objetivo"
             >
-              +
-            </button>
+              {OCTAVE_OPTIONS.map((opt) => (
+                <option key={opt.octave} value={opt.octave}>
+                  Octava {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="quick-strings-group">
+            <div className="quick-strings-row">
+              <span className="quick-group-tag">Guitarra</span>
+              <div className="quick-string-btns">
+                {QUICK_GUITAR_STRINGS.map((item) => (
+                  <button
+                    key={item.midi}
+                    type="button"
+                    className={`quick-string-btn ${targetMidi === item.midi ? 'is-active' : ''}`}
+                    onClick={() => onSelectTargetMidi(item.midi)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="quick-strings-row">
+              <span className="quick-group-tag">Bajo</span>
+              <div className="quick-string-btns">
+                {QUICK_BASS_STRINGS.map((item) => (
+                  <button
+                    key={item.midi}
+                    type="button"
+                    className={`quick-string-btn ${targetMidi === item.midi ? 'is-active' : ''}`}
+                    onClick={() => onSelectTargetMidi(item.midi)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
