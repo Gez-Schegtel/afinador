@@ -11,7 +11,7 @@
     "url": "https://github.com/Gez-Schegtel/afinador.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "vite --host",
@@ -20,7 +20,7 @@
     "test": "vitest",
     "cap:sync": "npm run build && npx cap sync android",
     "android:usb": "adb reverse tcp:5173 tcp:5173 && echo 'Puerto 5173 reenviado por USB. Abrí http://localhost:5173 en el navegador de tu Android.'",
-    "bench": "vitest bench --run"
+    "bench": "VITE_BENCH=1 vitest run src/core/dsp/mpm.perf.test.ts --reporter=verbose --silent=false"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.3",
@@ -32,10 +32,10 @@
     "@capacitor/cli": "^8.6.3",
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-react": "^6.3.0",
     "typescript": "^7.0.2",
-    "vite": "^6.4.6",
+    "vite": "^8.3.8",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^4.1.12"
+    "vitest": "^5.1.1"
   }
 }

@@ -92,7 +92,7 @@ Por seguridad estándar de los navegadores modernos (Chrome en Android, Firefox,
 ## 5. Instalación, Desarrollo y Pruebas
 
 ### Requisitos
-* `Node.js >= 22` (lo exige `@capacitor/cli` 8; el CI usa Node 24) y `npm`.
+* `Node.js >= 22.12` (lo exigen Vite 8, Vitest 5 y `@capacitor/cli` 8; el CI y el `.nvmrc` usan Node 24) y `npm`. Con una versión menor, npm omite el binario nativo de Rolldown y Vite no arranca.
 * Opcional para depuración por cable en Android: `adb` (*Android Debug Bridge*).
 
 ### Comandos principales

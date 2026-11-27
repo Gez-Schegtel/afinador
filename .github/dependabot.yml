@@ -10,7 +10,22 @@ updates:
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
+    groups:
+      # Vite, Vitest y el plugin de React dependen entre sí: actualizarlos por separado rompe la suite.
+      vite-toolchain:
+        patterns: ['vite', 'vitest', '@vitejs/*', 'vite-plugin-pwa']
+    ignore:
+      # El salto de versión mayor de Capacitor se hace con `npx cap migrate`, no con Dependabot.
+      - dependency-name: '@capacitor/*'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: 'gradle'
     directory: '/android'
     schedule:
       interval: 'weekly'
+    ignore:
+      # Gradle, el plugin de Android y AndroidX los fija Capacitor: las versiones mayores se cambian
+      # junto con `npx cap migrate` y probando el build del APK.
+      - dependency-name: 'gradle-wrapper'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'com.android.tools.build:gradle'
+        update-types: ['version-update:semver-major']
