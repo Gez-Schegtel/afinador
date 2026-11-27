@@ -26,6 +26,7 @@ import {
   HeaderSubtitle,
   useSpaceShortcut,
 } from '../shell/AppShell';
+import { useMetronome } from '../shell/MetronomeContext';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
 const STORAGE_TARGET_MIDI_KEY = 'afinador_target_midi';
@@ -108,6 +109,10 @@ export function TunerSection() {
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [wakeLocked, setWakeLocked] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const metronome = useMetronome();
+  const metronomeRef = useRef(metronome);
+  metronomeRef.current = metronome;
 
   const [displayMatch, setDisplayMatch] = useState<ChromaticMatch | null>(null);
   const [isHolding, setIsHolding] = useState(false);
@@ -329,6 +334,13 @@ export function TunerSection() {
       void engine.stop();
     } else if (status === 'idle') {
       setErrorMsg(null);
+      // El micrófono captura audio crudo: los clics del metrónomo se colarían en la lectura.
+      if (metronomeRef.current.running) {
+        metronomeRef.current.stop();
+        setNotice('Se detuvo el metrónomo para que el micrófono no capte sus clics.');
+      } else {
+        setNotice(null);
+      }
       void engine.start();
     }
   }, []);
@@ -365,6 +377,12 @@ export function TunerSection() {
           </div>
         </div>
       </HeaderActions>
+
+      {notice && (
+        <div className="info-banner" role="status">
+          {notice}
+        </div>
+      )}
 
       {errorMsg && (
         <div className="error-banner" role="alert">

@@ -218,6 +218,148 @@ select {
   align-items: flex-start;
 }
 
+.info-banner {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* Metrónomo (Spec 004) */
+.metronome-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 14px;
+}
+
+.tempo-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tempo-unit {
+  font-size: 2.6rem;
+  color: var(--led-cyan);
+}
+
+.tempo-equals {
+  font-size: 1.8rem;
+  color: var(--text-muted);
+}
+
+.tempo-value {
+  font-size: 4.6rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.tempo-caption,
+.meter-caption {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.meter-caption strong {
+  color: var(--text-primary);
+}
+
+.beat-leds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 18px;
+  padding: 14px 10px;
+  width: 100%;
+  background: var(--bg-outer);
+  border: 1px solid var(--border-chassis);
+  border-radius: 14px;
+}
+
+.beat-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 16px;
+}
+
+.beat-group-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.beat-led {
+  display: block;
+  border-radius: 999px;
+  background: var(--border-chassis);
+  transition:
+    background-color 60ms linear,
+    box-shadow 60ms linear;
+}
+
+.beat-led.is-pulse {
+  width: 26px;
+  height: 26px;
+}
+
+.beat-led.is-sub {
+  width: 12px;
+  height: 12px;
+}
+
+.beat-led.is-silent {
+  opacity: 0.35;
+}
+
+.beat-led.is-accent {
+  outline: 2px solid rgba(245, 158, 11, 0.45);
+  outline-offset: 2px;
+}
+
+.beat-led.is-lit {
+  background: var(--led-cyan);
+  box-shadow: 0 0 14px var(--led-cyan);
+}
+
+.beat-led.is-accent.is-lit {
+  background: var(--led-amber);
+  box-shadow: 0 0 16px var(--led-amber);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.toggle-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--led-cyan);
+  cursor: pointer;
+}
+
 /* Visor principal del pedal */
 .pedal-screen {
   flex: 1;

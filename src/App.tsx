@@ -15,6 +15,7 @@ import {
 } from './navigation/routes';
 import { useHashRoute } from './navigation/useHashRoute';
 import { AppShellContext, type AppShellServices } from './shell/AppShell';
+import { MetronomeProvider } from './shell/MetronomeContext';
 import { useGlobalKeyboard } from './shell/useGlobalKeyboard';
 import { TunerSection } from './sections/TunerSection';
 
@@ -52,6 +53,7 @@ export function App() {
 
   return (
     <AppShellContext.Provider value={services}>
+      <MetronomeProvider>
       <div className="pedal-chassis" data-section={route.section}>
         <header className="pedal-header">
           <div className="brand">
@@ -90,6 +92,7 @@ export function App() {
           {route.section === 'metronome' && <MetronomeSection />}
         </Suspense>
       </div>
+      </MetronomeProvider>
     </AppShellContext.Provider>
   );
 }

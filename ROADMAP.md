@@ -42,6 +42,11 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - Motor de audio con estados explícitos (`idle → starting → running → stopping`): un doble toque ya no crea dos motores, una falla al arrancar libera micrófono y `AudioContext`, y salir del Afinador siempre apaga el micrófono. Corrige también una carrera del *Wake Lock*.
 - Atajo `Espacio` contextual por sección; tras un clic de mouse, el botón pierde el foco y el atajo ya no repite su acción.
 
+### Fase 7 — Metrónomo (`Spec 004`)
+- Compases simples, compuestos e irregulares con la figura de pulso correcta en cada caso (`♩`, `♩.`, `♪`), agrupaciones de amalgama, acento opcional y subdivisión ([`docs/specs/004-metrónomo.md`](./docs/specs/004-metrónomo.md)).
+- Programación con *look-ahead* sobre el reloj de audio, temporizador en *Web Worker* y línea de tiempo sin deriva (`src/core/rhythm/meters.ts`, verificada con 1000 clics exactos).
+- Exclusión mutua con el micrófono del afinador.
+
 ---
 
 ## 📋 Próximos Hitos y Backlog
@@ -49,7 +54,6 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - [ ] **Lanzamiento `v0.1.0` en GitHub Releases con firma propia:** generar `release.jks`, configurar los *Secrets* en GitHub y crear el tag `v0.1.0` para publicar el primer `.apk` oficial firmado.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
 - [ ] **Spec 007 — Identidad visual *Endurend Musical Gadgets***.
-- [ ] **Spec 004 — Metrónomo**.
 - [ ] **Spec 003 — Diccionario de acordes**.
 - [ ] **Spec 005 — Identificador de acordes**.
 - [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
