@@ -4,8 +4,9 @@
  * 1. Supresión de ataque de púa (Attack Blanking): ignora los primeros ~45 ms cuando la
  *    energía RMS salta bruscamente al golpear la cuerda (donde la tensión transitoria
  *    sube artificialmente el tono y la onda es caótica).
- * 2. Histéresis de claridad: exige claridad >= 0.82 para enganchar una nota nueva desde
- *    silencio y la sostiene hasta claridad >= 0.74 durante el decay.
+ * 2. Histéresis de claridad (modo Automático): exige claridad >= 0.75 para enganchar una nota
+ *    nueva desde silencio y la sostiene mientras el detector la entregue (>= 0.72, su umbral
+ *    mínimo). En modo Manual ambos umbrales valen 0.58, igual que el detector.
  * 3. Media Recortada Intercuartil (12 cuadros ≈ 255 ms): ordena las últimas lecturas,
  *    descarta el 25% inferior y superior de picos/batidos acústicos y promedia el centro.
  * 4. Filtro EMA de doble velocidad: firme y sedoso dentro de la misma nota (< 18 cents)
@@ -128,7 +129,7 @@ export class PitchSmoother {
       ? 0.58
       : this.smoothedSemi === null
         ? 0.75
-        : 0.68;
+        : 0.72;
 
     if (
       frequency !== null &&

@@ -16,7 +16,7 @@
 ## 2. Propuesta Funcional y UX (Móvil y PC)
 
 - **Selector `MODO DE AFINACIÓN` (`AUTOMÁTICO` / `MANUAL`):**
-  - **Automático:** detección cromática libre en `27.5–2000 Hz`.
+  - **Automático:** detección cromática libre en `27.5–2000 Hz` (luego ampliada a `25–2000 Hz` para ver un A0 bajo de tono).
   - **Manual:** despliega la sección **«Nota objetivo»** con dos selectores directos (**Nota** `C..B` y **Octava** `0..5`, cubriendo `A0–B5`) más botones rápidos de 1 clic para las cuerdas estándar de Guitarra (`6ª E2..1ª E4`) y Bajo (`5ª B0..1ª G2`). El último objetivo elegido persiste en `localStorage` (`afinador_target_midi`).
 - **Auto-escala visual en modo Manual:** cuando el error supera `±55 cents`, el arco pasa automáticamente a **Escala Amplia (`±6 semitonos`)** indicando los semitonos faltantes; al acercarse dentro de `±46 cents`, vuelve a **Escala Fina (`±50 cents`)** para afinar con precisión.
 - **Diseño responsivo:**
@@ -25,7 +25,7 @@
 
 ## 3. Impacto Técnico (DSP / Audio / UI)
 
-- **Sensibilidad en Automático:** ajuste de puerta de entrada en `mpm.ts` (`minRms = 0.0035`, `minClarity = 0.72`) y `smoother.ts` (`0.75 / 0.68`).
+- **Sensibilidad en Automático:** ajuste de puerta de entrada en `mpm.ts` (`minRms = 0.0035`, `minClarity = 0.72`) y `smoother.ts` (`0.75` para enganchar; el sostén quedó luego en `0.72`, el umbral del detector, porque `0.68` nunca llegaba a aplicarse).
 - **Rango DSP asimétrico en Manual (`pitch-worklet.ts`):** al enviar `targetHz` al `AudioWorklet`, acota la búsqueda entre **`-11.5` semitonos abajo** y **`+5` semitonos arriba** (`minRms = 0.0025`, `minClarity = 0.58`, `clarityThreshold = 0.92`) para cubrir hasta casi una octava por debajo sin saltar al 2º armónico, junto con confirmación acelerada (`2` cuadros) en `PitchSmoother`.
 
 ## 4. Fuera de Alcance

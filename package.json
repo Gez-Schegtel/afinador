@@ -16,7 +16,8 @@
     "preview": "vite preview --host",
     "test": "vitest",
     "cap:sync": "npm run build && npx cap sync android",
-    "android:usb": "adb reverse tcp:5173 tcp:5173 && echo 'Puerto 5173 reenviado por USB. Abrí http://localhost:5173 en el navegador de tu Android.'"
+    "android:usb": "adb reverse tcp:5173 tcp:5173 && echo 'Puerto 5173 reenviado por USB. Abrí http://localhost:5173 en el navegador de tu Android.'",
+    "bench": "vitest bench --run"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.3",

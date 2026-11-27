@@ -362,7 +362,7 @@ export function TunerSection() {
       <HeaderSubtitle>
         {isListening && sampleRate
           ? `DSP 64-bit · ${(sampleRate / 1000).toFixed(1)} kHz${wakeLocked ? ' · Pantalla activa' : ''}`
-          : 'Guitarra y Bajo · 27.5–2000 Hz'}
+          : 'Guitarra y Bajo · 25–2000 Hz'}
       </HeaderSubtitle>
 
       <HeaderActions>

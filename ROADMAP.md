@@ -20,7 +20,7 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 
 ### Fase 3 — Estabilización Acústica Real
 - Pre-filtrado pasa-banda **Butterworth de 2º orden (`24–1800 Hz`)** dentro del `AudioWorklet` para rechazar golpes sub-audibles y ruido de ambiente agudo.
-- Reemplazo del refinamiento de fase por **interpolación espectral QIFFT de log-magnitud con ventana Blackman–Harris de 4 términos** (`< 0.02 cents`), inmune a rebotes y ecos de sala.
+- Reemplazo del refinamiento de fase por **interpolación espectral QIFFT de log-magnitud con ventana Blackman–Harris de 4 términos** (`< 0.03 cents` medidos por la suite), inmune a rebotes y ecos de sala.
 - Estabilizador **`PitchSmoother`** con supresión de ataque de púa (*attack blanking*), **media recortada intercuartil de 12 cuadros (`~255 ms`)** y EMA de doble velocidad (`0.085` en reposo / `0.30` al girar clavija).
 - Histéresis tipo pedal (*Schmitt trigger*): bloqueo **`✓ AFINADO`** en `±2.5 cents` con retención hasta `±4.0 cents` y frontera entre semitonos a `±56 cents`.
 

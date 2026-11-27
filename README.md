@@ -21,14 +21,14 @@ Funciona como aplicación web progresiva (**PWA**) instalable **100% sin interne
 | **Metrónomo** | Compases **simples** (2/4, 3/4, 4/4, 5/4; BPM de negra `♩`), **compuestos** (6/8, 9/8, 12/8; BPM de negra con puntillo `♩.` con subdivisión en corcheas) e **irregulares** (5/8 y 7/8 con agrupaciones 2+3, 3+2, 2+2+3, 2+3+2 y 3+2+2; BPM de corchea `♪`), `30–300 BPM` y acento opcional del primer tiempo. Clics sintetizados y programados con el reloj de audio (sin deriva) desde un *Web Worker* ([Spec 004](./docs/specs/004-metrónomo.md)) |
 | **Diccionario de acordes** | **17 raíces × 20 tipos** (tríadas, sus, quinta, sextas, séptimas y novenas) con ortografía calculada por intervalos (`C°7 = C E♭ G♭ B𝄫`) y hasta **12 digitaciones** generadas para guitarra de 6, 7 y 8 cuerdas en cualquier afinación del catálogo, verificadas por tests (toda nota pertenece al acorde, raíz en el bajo, ≤ 4 trastes y ≤ 4 dedos) ([Spec 003](./docs/specs/003-acordes.md)) |
 | **Identificador de acordes** | Marcá una forma sobre el mástil (guitarra de 6, 7 y 8, bajo de 4, 5 y 6, en cualquier afinación del catálogo) y obtené **todas las lecturas válidas ordenadas** (p. ej. `Am7` y `C6/A`), con inversiones (`Am/C`, 1ª inversión), ortografía de mínimas alteraciones e intervalos para dos notas ([Spec 005](./docs/specs/005-identificador-de-acordes.md)) |
-| **Rango de frecuencias** | **`27.5 Hz` (`A0`) a `2000 Hz`** — cubre bajo de 4, 5 y 6 cuerdas (`B0 = 30.87 Hz`, `E1 = 41.20 Hz`, *Drop A*) y guitarra de 6, 7 y 8 cuerdas en todo el diapasón |
-| **Precisión algorítmica** | **`< 0.05 cents`** en señales periódicas y **`< 0.08 cents`** con fundamental atenuada (*verificado por suite automatizada*) |
-| **Sensibilidad de entrada** | Puerta RMS base **`0.0035`** (claridad `0.72`) en Automático y **`0.0025`** (claridad `0.58`, rango `-11.5 / +5 st`) en modo Manual para cuerdas suaves o muy flojas |
+| **Rango de frecuencias** | **`25 Hz` a `2000 Hz`** — detecta un `A0` (`27.5 Hz`) hasta ~165 cents bajo de tono, así que cubre bajo de 4, 5 y 6 cuerdas (`B0 = 30.87 Hz`, `E1 = 41.20 Hz`, *Drop A*) y guitarra de 6, 7 y 8 cuerdas en todo el diapasón |
+| **Precisión algorítmica** | **`< 0.03 cents`** de `A0` a `B6` con señales armónicas sin ruido a 44.1/48 kHz, **`< 0.05 cents`** con el pipeline completo (filtros + decimación) a 44.1, 48, 88.2, 96 y 192 kHz, **`< 0.08 cents`** con fundamental atenuada y error RMS **`< 0.5 cents`** con ruido blanco a ~26 dB de SNR (*verificado por la suite automatizada*). En cuerdas reales, la inarmonicidad hace que el 2º armónico suene apenas agudo: cuando la fundamental es muy débil y se refina sobre él, la lectura puede quedar ~0.3 cents (guitarra) a ~1.5 cents (bajo grave) alta |
+| **Sensibilidad de entrada** | Puerta RMS base **`0.0035`** en Automático (claridad mínima `0.72`; para enganchar una nota desde silencio, `0.75`) y **`0.0025`** (claridad `0.58`, rango `-11.5 / +5 st`) en modo Manual para cuerdas suaves o muy flojas |
 | **Escala auto-rango (Manual)** | Cambia automáticamente entre **Escala Amplia (`±6 semitonos`)** cuando la cuerda está lejos (`> ±55 ct`) y **Escala Fina (`±50 cents`)** al acercarse (`< ±46 ct`) |
 | **Bloqueo `✓ AFINADO` (Schmitt trigger)** | Entrada en **`±2.5 cents`** con histéresis de retención hasta **`±4.0 cents`** (evita parpadeos de color), acompañado de visor estroboscópico continuo con zona muerta fina en `±0.35 cents` |
 | **Calibración de referencia (`A4`)** | Ajustable entre **`415.0 Hz` y `466.0 Hz`** en pasos de `0.1` / `0.5` / `1 Hz` (con accesos directos a `430`, `432`, `440`, `442` y `444 Hz`), persistida en `localStorage` |
-| **Ventana y tasa de análisis** | Ventana deslizante de **`8192` muestras** (~`170.7 ms` a `48 kHz`) con avance (*hop*) de **`1024` muestras** (~`21.3 ms` = **~46.9 lecturas/segundo**) en hilo dedicado `AudioWorklet` |
-| **Precisión numérica interna** | Coma flotante IEEE-754 de **64 bits (`Float64Array`)** sin asignaciones dinámicas en tiempo real |
+| **Ventana y tasa de análisis** | Ventana deslizante de **`8192` muestras** (~`170.7 ms` a `48 kHz`) con avance (*hop*) de **`1024` muestras** (~`21.3 ms` = **~46.9 lecturas/segundo**) en hilo dedicado `AudioWorklet`. A 88.2, 96 o 192 kHz la señal se **decima** (×2 o ×4) después del pasa-bajos, así que el análisis siempre corre a 44.1/48 kHz |
+| **Precisión numérica interna** | Coma flotante IEEE-754 de **64 bits (`Float64Array`)** desde el filtrado hasta el refinamiento, sin asignaciones grandes en tiempo real. Costo medido de un análisis: **~1.3 ms** en una PC de escritorio (`npm run bench`) |
 
 ---
 
@@ -39,15 +39,15 @@ Los afinadores convencionales suelen emplear una FFT simple o autocorrelación d
 Este programa resuelve ambos frentes (máxima precisión e inmunidad acústica) mediante una cadena DSP de 4 etapas (`src/audio/pitch-worklet.ts` y `src/core/dsp/`):
 
 1. **Pre-filtrado Pasa-Banda Butterworth (`24 Hz – 1800 Hz`):**
-   * Dos filtros *Biquad* de 2º orden en cascada eliminan golpes graves sub-audibles (mesa/viento) y ruido agudo (soplido/ventiladores/trastes) antes de analizar el período.
+   * Dos filtros *Biquad* de 2º orden en cascada eliminan golpes graves sub-audibles (mesa/viento) y ruido agudo (soplido/ventiladores/trastes) antes de analizar el período. A tasas de muestreo altas, la señal filtrada se decima a ~44.1/48 kHz (`src/core/dsp/frontend.ts`).
 2. **`Float64` FFT-MPM (`McLeod Pitch Method` acelerado por Wiener–Khinchin):**
    * Elimina el *offset* DC y aplica una puerta de ruido **RMS** (`minRms = 0.0035` en Automático; `0.0025` en Manual).
-   * Calcula la autocorrelación lineal exacta en $O(N \log N)$ usando una **FFT Radix-2 propia de `16384` puntos** (`src/core/dsp/fft.ts`) combinada con la recurrencia exacta de energía de McLeod & Wyvill para obtener la **NSDF (*Normalized Square Difference Function*)**. Al basarse solo en la energía periódica, es inmune a ecos y desfases acústicos de sala.
+   * Calcula la autocorrelación lineal exacta en $O(N \log N)$ con una **FFT Radix-2 propia** (`src/core/dsp/fft.ts`) sobre `16384` puntos lógicos, empaquetando la señal real en una FFT compleja de `8192` puntos (la mitad del costo), combinada con la recurrencia exacta de energía de McLeod & Wyvill para obtener la **NSDF (*Normalized Square Difference Function*)**. Al basarse solo en la energía periódica, es inmune a ecos y desfases acústicos de sala.
    * En **modo Manual**, restringe la búsqueda de períodos entre **`-11.5` y `+5` semitonos** alrededor de la **Nota objetivo** (con `clarityThreshold = 0.92`), permitiendo afinar cuerdas muy flojas o recién colocadas sin quedarse mudo ni saltar al 2º armónico. En **modo Automático**, extrae el primer *key maximum* que alcanza el `90%` del pico global para evitar saltos de octava.
 3. **Refinamiento Espectral de Log-Magnitud QIFFT con Ventana Blackman–Harris de 4 términos:**
-   * Opera únicamente sobre la magnitud `|X(ω)|` de las `8192` muestras completas (sin derivadas de fase sensibles a ecos de sala) mediante interpolación cuadrática de 0.25 bin alrededor de la fundamental —o del 2º armónico cuando la fundamental es muy débil—, logrando rechazo lateral **> 92 dB** y precisión **`< 0.02 cents`** sin sesgo parabólico.
+   * Opera únicamente sobre la magnitud `|X(ω)|` de las `8192` muestras completas (sin derivadas de fase sensibles a ecos de sala) mediante interpolación cuadrática de 0.25 bin alrededor de la fundamental —o del 2º armónico cuando la fundamental es muy débil—, logrando rechazo lateral **> 92 dB** y precisión **`< 0.03 cents`** (medida en toda la suite). El paso entre fundamental y 2º armónico tiene **histéresis** (entra con la fundamental bajo el 40% del armónico y sale sobre el 50%), así la lectura no salta durante el *sustain*.
 4. **Estabilizador y Bloqueo Tipo Pedal (`src/core/dsp/smoother.ts` y `src/core/music/notes.ts`):**
-   * **Supresión de ataque (*attack blanking*):** ignora transitorios bruscos al golpear con la púa (`~45 ms`).
+   * **Supresión de ataque (*attack blanking*):** ignora transitorios bruscos al volver a golpear con la púa una nota que todavía suena (`~45 ms`). El primer golpe desde silencio no se suprime, para no demorar la primera lectura: el promedio recortado y el EMA absorben ese ataque en ~0.5 s.
    * **Media recortada intercuartil de 12 cuadros (`~255 ms`):** ordena las últimas lecturas, descarta el 25% superior e inferior de batidos acústicos y promedia el núcleo central, seguido de un EMA de doble velocidad (`0.085` en reposo para clavar la aguja, `0.30` al girar la clavija).
    * **Histéresis *Schmitt trigger*:** sostiene el nombre de la nota hasta `±56 cents` entre semitonos y el estado `✓ AFINADO` entre `±2.5 cents` (entrada) y `±4.0 cents` (salida).
 
@@ -90,7 +90,7 @@ Por seguridad estándar de los navegadores modernos (Chrome en Android, Firefox,
 ## 5. Instalación, Desarrollo y Pruebas
 
 ### Requisitos
-* `Node.js >= 20` y `npm`.
+* `Node.js >= 22` (lo exige `@capacitor/cli` 8; el CI usa Node 24) y `npm`.
 * Opcional para depuración por cable en Android: `adb` (*Android Debug Bridge*).
 
 ### Comandos principales
@@ -101,6 +101,9 @@ npm install
 
 # Ejecutar la suite automatizada de tests DSP y musicales
 npm test -- --run
+
+# Medir el costo de un análisis del detector (referencia, no bloqueante)
+npm run bench
 
 # Iniciar servidor de desarrollo
 npm run dev

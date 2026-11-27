@@ -2,16 +2,18 @@
  * Motor DSP de Alta Precisión e Inmunidad Acústica (Float64) para Guitarra y Bajo:
  *
  * 1. FFT-MPM (McLeod Pitch Method acelerado por FFT en 64 bits sobre 8192 muestras):
- *    Calcula la NSDF exacta mediante Wiener–Khinchin O(N log N) + recurrencia exacta de
- *    energía. Identifica inequívocamente el período fundamental desde 27.5 Hz (A0 / bajo
- *    de 5 cuerdas B0 = 30.87 Hz) hasta 2000 Hz sin saltos de octava.
+ *    Calcula la NSDF exacta mediante Wiener–Khinchin O(N log N) (FFT real empaquetada, la mitad
+ *    del costo de una FFT compleja) + recurrencia exacta de energía. Detecta desde 25 Hz (un A0
+ *    de 27.5 Hz hasta ~165 cents bajo) hasta 2000 Hz sin saltos de octava.
  *
  * 2. Refinamiento Espectral de Log-Magnitud QIFFT con Ventana Blackman–Harris de 4 términos:
  *    Opera únicamente sobre la magnitud |X(ω)| de las 8192 muestras completas (sin derivadas
- *    de fase sensibles a ecos de sala), logrando rechazo lateral > 92 dB y precisión < 0.02 cents.
+ *    de fase sensibles a ecos de sala), con rechazo lateral > 92 dB. Peor error medido por la
+ *    suite: < 0.03 cents en señales armónicas sin ruido (A0–B6). Si la fundamental es débil se
+ *    refina sobre el 2º armónico, con histéresis para no saltar entre ambos modos.
  */
 
-import { FFT64 } from './fft';
+import { RealAutocorrelator } from './fft';
 
 export interface MPMOptions {
   /** Umbral mínimo de energía RMS para puerta de ruido (default: 0.0035) */
@@ -20,7 +22,7 @@ export interface MPMOptions {
   clarityThreshold?: number;
   /** Claridad periódica mínima aceptable en [0, 1] (default: 0.72) */
   minClarity?: number;
-  /** Frecuencia mínima detectable en Hz (default: 27.5 Hz — cubre A0 y B0 de bajo 5 cuerdas) */
+  /** Frecuencia mínima detectable en Hz (default: 25 Hz — A0 hasta ~165 cents bajo, sobre el pasa-altos de 24 Hz) */
   minFreq?: number;
   /** Frecuencia máxima detectable en Hz (default: 2000 Hz) */
   maxFreq?: number;
@@ -36,33 +38,53 @@ const DEFAULT_OPTIONS: Required<MPMOptions> = {
   minRms: 0.0035,
   clarityThreshold: 0.9,
   minClarity: 0.72,
-  minFreq: 27.5,
+  minFreq: 25,
   maxFreq: 2000,
 };
 
-function nextPow2(v: number): number {
-  let p = 1;
-  while (p < v) p <<= 1;
-  return p;
+/** Opciones del modo Automático (las por defecto). */
+export const AUTO_DETECTION_OPTIONS: Readonly<Required<MPMOptions>> = DEFAULT_OPTIONS;
+
+/** Rango del modo Manual alrededor de la nota objetivo (Spec 001): −11.5 / +5 semitonos. */
+export const MANUAL_RANGE_SEMITONES_BELOW = 11.5;
+export const MANUAL_RANGE_SEMITONES_ABOVE = 5;
+
+/**
+ * Opciones del modo Manual para una nota objetivo: ventana asimétrica para cuerdas muy flojas sin
+ * saltar al 2º armónico, sensibilidad aumentada y elección estricta del primer máximo.
+ */
+export function manualDetectionOptions(targetHz: number): Required<MPMOptions> {
+  return {
+    minFreq: Math.max(25, targetHz * Math.pow(2, -MANUAL_RANGE_SEMITONES_BELOW / 12)),
+    maxFreq: Math.min(2200, targetHz * Math.pow(2, MANUAL_RANGE_SEMITONES_ABOVE / 12)),
+    minRms: 0.0025,
+    minClarity: 0.58,
+    clarityThreshold: 0.92,
+  };
 }
+
+/** Por debajo de esta cantidad de bins la fundamental queda pegada a su imagen negativa (QIFFT sesgado). */
+const MIN_REFINE_BINS = 4;
+/** Histéresis del refinamiento sobre el 2º armónico (cociente de magnitudes 2º/1º). */
+const HARMONIC_ENTER_LOG = Math.log(2.5);
+const HARMONIC_EXIT_LOG = Math.log(2.0);
 
 export class MPMDetector {
   private readonly bufferSize: number;
-  private readonly fft: FFT64;
-  private readonly fftReal: Float64Array;
-  private readonly fftImag: Float64Array;
+  private readonly autocorrelator: RealAutocorrelator;
+  private readonly acf: Float64Array;
   private readonly centered: Float64Array;
   private readonly nsdf: Float64Array;
   private readonly peakTaus: Int32Array;
   private readonly peakValues: Float64Array;
   private readonly bhWindow: Float64Array;
+  /** Estado de la histéresis fundamental ↔ 2º armónico. */
+  private harmonicMode = false;
 
   constructor(bufferSize: number = 8192) {
     this.bufferSize = bufferSize;
-    const fftSize = nextPow2(bufferSize * 2);
-    this.fft = new FFT64(fftSize);
-    this.fftReal = new Float64Array(fftSize);
-    this.fftImag = new Float64Array(fftSize);
+    this.autocorrelator = new RealAutocorrelator(bufferSize);
+    this.acf = new Float64Array(bufferSize);
 
     this.centered = new Float64Array(bufferSize);
     this.nsdf = new Float64Array(bufferSize);
@@ -79,6 +101,11 @@ export class MPMDetector {
         0.14128 * Math.cos(4 * Math.PI * r) -
         0.01168 * Math.cos(6 * Math.PI * r);
     }
+  }
+
+  /** Olvida el estado entre cuadros (llamar al cambiar de nota objetivo o de modo). */
+  public reset(): void {
+    this.harmonicMode = false;
   }
 
   public detect(
@@ -115,6 +142,7 @@ export class MPMDetector {
 
     const rms = Math.sqrt(sumSq / n);
     if (rms < minRms) {
+      this.harmonicMode = false;
       return { frequency: null, clarity: 0, rms };
     }
 
@@ -124,39 +152,22 @@ export class MPMDetector {
       return { frequency: null, clarity: 0, rms };
     }
 
-    // 2. Autocorrelación lineal exacta vía FFT64 (Wiener–Khinchin)
-    const fftSize = this.fft.size;
-    const re = this.fftReal;
-    const im = this.fftImag;
-
-    for (let i = 0; i < n; i++) {
-      re[i] = centered[i]!;
-      im[i] = 0;
-    }
-    re.fill(0, n, fftSize);
-    im.fill(0, n, fftSize);
-
-    this.fft.transform(re, im, false);
-    for (let k = 0; k < fftSize; k++) {
-      const r = re[k]!;
-      const m = im[k]!;
-      re[k] = r * r + m * m;
-      im[k] = 0;
-    }
-    this.fft.transform(re, im, true);
+    // 2. Autocorrelación lineal exacta vía FFT real (Wiener–Khinchin)
+    const limitTau = Math.min(n - 1, maxTau + 2);
+    const acf = this.acf;
+    this.autocorrelator.compute(centered, n, acf, limitTau);
 
     // 3. Normalización NSDF exacta con recurrencia O(N) de McLeod & Wyvill
     const nsdf = this.nsdf;
     nsdf[0] = 1;
     let mTau = 2 * sumSq;
-    const limitTau = Math.min(n - 1, maxTau + 2);
 
     for (let tau = 1; tau <= limitTau; tau++) {
       const left = centered[n - tau]!;
       const right = centered[tau - 1]!;
       mTau -= left * left + right * right;
       if (mTau > 1e-18) {
-        const raw = (2 * re[tau]!) / mTau;
+        const raw = (2 * acf[tau]!) / mTau;
         nsdf[tau] = raw > 1 ? 1 : raw < -1 ? -1 : raw;
       } else {
         nsdf[tau] = 0;
@@ -201,6 +212,7 @@ export class MPMDetector {
     }
 
     if (peakCount === 0 || highestPeakValue < minClarity) {
+      this.harmonicMode = false;
       return {
         frequency: null,
         clarity: highestPeakValue > 0 ? highestPeakValue : 0,
@@ -331,16 +343,32 @@ export class MPMDetector {
     f0Estimate: number,
     sampleRate: number
   ): number {
+    const binHz = sampleRate / this.bufferSize;
+    const fundamentalTooCloseToDc = f0Estimate / binHz < MIN_REFINE_BINS;
+    const harmonicAvailable = 2 * f0Estimate < sampleRate * 0.45;
     const lm1 = this.logMagnitudeAt((2 * Math.PI * f0Estimate) / sampleRate);
 
-    if (2 * f0Estimate < sampleRate * 0.45) {
+    if (harmonicAvailable) {
       const lm2 = this.logMagnitudeAt((4 * Math.PI * f0Estimate) / sampleRate);
-      // Si la fundamental está muy atenuada (< 40% del 2º armónico), refinar sobre 2*f0 y dividir por 2
-      if (lm2 - lm1 > Math.log(2.5)) {
+      // Fundamental atenuada (< 40% del 2º armónico al entrar, < 50% para salir): refinar sobre
+      // 2·f0 y dividir por 2. La histéresis evita saltos de 0.3–1.6 cents en cuerdas inarmónicas.
+      const ratioLog = lm2 - lm1;
+      if (this.harmonicMode) {
+        if (ratioLog < HARMONIC_EXIT_LOG) this.harmonicMode = false;
+      } else if (ratioLog > HARMONIC_ENTER_LOG) {
+        this.harmonicMode = true;
+      }
+      if (this.harmonicMode || fundamentalTooCloseToDc) {
         return this.parabolicQifft(2 * f0Estimate, lm2, sampleRate) / 2;
       }
+    } else {
+      this.harmonicMode = false;
     }
 
+    // Con la fundamental pegada a DC, el QIFFT se sesga: quedarse con la estimación MPM.
+    if (fundamentalTooCloseToDc) {
+      return f0Estimate;
+    }
     return this.parabolicQifft(f0Estimate, lm1, sampleRate);
   }
 }

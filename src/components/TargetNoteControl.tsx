@@ -92,7 +92,7 @@ export function TargetNoteControl({
           <span className="calibration-range">
             {isManual
               ? 'Manual · Detecta hasta −11.5 / +5 st'
-              : 'Automático · Detección libre (27.5–2000 Hz)'}
+              : 'Automático · Detección libre (25–2000 Hz)'}
           </span>
         </div>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectPitchMPM } from './mpm';
+import { MPMDetector, detectPitchMPM, manualDetectionOptions } from './mpm';
 import { PitchSmoother } from './smoother';
 import { centsBetween, midiToFrequency } from '../music/notes';
 
@@ -8,27 +8,27 @@ function generateInstrumentTone(
   sampleRate: number,
   length: number = 8192,
   harmonicWeights: number[] = [1.0, 0.75, 0.5, 0.3, 0.15],
-  initialPhaseRad: number = 0.73
+  initialPhaseRad: number = 0.73,
+  inharmonicity: number = 0
 ): Float32Array {
   const buf = new Float32Array(length);
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     let sample = 0;
     for (let h = 0; h < harmonicWeights.length; h++) {
-      const harmonicNumber = h + 1;
+      const k = h + 1;
+      // Cuerda real: el parcial k vale k·f0·√(1 + B·k²) (B = coeficiente de inarmonicidad).
+      const partialHz = k * fundamentalHz * Math.sqrt(1 + inharmonicity * k * k);
       sample +=
         harmonicWeights[h]! *
-        Math.sin(
-          2 * Math.PI * fundamentalHz * harmonicNumber * t +
-            initialPhaseRad * harmonicNumber
-        );
+        Math.sin(2 * Math.PI * partialHz * t + initialPhaseRad * k);
     }
     buf[i] = sample * 0.25;
   }
   return buf;
 }
 
-describe('Motor Float64 FFT-MPM + Interpolación Sinc (Guitarra y Bajo)', () => {
+describe('Motor Float64 FFT-MPM + refinamiento QIFFT (Guitarra y Bajo)', () => {
   const fullRangeMidiNotes = [23, 28, 33, 38, 40, 45, 50, 55, 59, 64, 76, 84];
 
   it('alcanza alta precisión (< 0.05 cents) desde B0 de bajo (30.87 Hz) hasta C6 de guitarra (1046.5 Hz) a 48 kHz', () => {
@@ -125,7 +125,7 @@ describe('PitchSmoother — Estabilidad ante batido acústico real de cuerda', (
     expect(expired.frequency).toBeNull();
   });
 
-  it('en modo Manual acotado a ±5 semitonos de E2 (82.41 Hz) engancha la fundamental aunque el 2º armónico sea 12x más fuerte', () => {
+  it('en modo Manual (configuración real del worklet) sobre E2 (82.41 Hz) engancha la fundamental aunque el 2º armónico sea 12x más fuerte', () => {
     const sampleRate = 48000;
     const e2Hz = midiToFrequency(40, 440); // 82.41 Hz
     // Señal extrema: fundamental mínima (0.08) vs 2º armónico gigante (1.0)
@@ -136,13 +136,11 @@ describe('PitchSmoother — Estabilidad ante batido acústico real de cuerda', (
       [0.08, 1.0, 0.6]
     );
 
-    const manualResult = detectPitchMPM(extremeWeakFundamental, sampleRate, {
-      minFreq: Math.max(25, e2Hz * Math.pow(2, -5 / 12)),
-      maxFreq: Math.min(2200, e2Hz * Math.pow(2, 5 / 12)),
-      minRms: 0.0025,
-      minClarity: 0.6,
-      clarityThreshold: 0.85,
-    });
+    const manualResult = detectPitchMPM(
+      extremeWeakFundamental,
+      sampleRate,
+      manualDetectionOptions(e2Hz)
+    );
 
     expect(manualResult.frequency).not.toBeNull();
     expect(Math.abs(centsBetween(manualResult.frequency!, e2Hz))).toBeLessThan(
@@ -162,17 +160,84 @@ describe('PitchSmoother — Estabilidad ante batido acústico real de cuerda', (
       [0.35, 1.0, 0.75, 0.4]
     );
 
-    const manualResult = detectPitchMPM(looseSignal, sampleRate, {
-      minFreq: Math.max(25, g3Hz * Math.pow(2, -11.5 / 12)),
-      maxFreq: Math.min(2200, g3Hz * Math.pow(2, 5 / 12)),
-      minRms: 0.0025,
-      minClarity: 0.58,
-      clarityThreshold: 0.92,
-    });
+    const manualResult = detectPitchMPM(
+      looseSignal,
+      sampleRate,
+      manualDetectionOptions(g3Hz)
+    );
 
     expect(manualResult.frequency).not.toBeNull();
     expect(
       Math.abs(centsBetween(manualResult.frequency!, veryLooseHz))
     ).toBeLessThan(0.1);
+  });
+});
+
+describe('Rango, ruido e inarmonicidad', () => {
+  it('precisión < 0.03 cents de A0 a B6 (tono armónico, 4 fases, 44.1 y 48 kHz)', () => {
+    for (const sampleRate of [44100, 48000]) {
+      const detector = new MPMDetector(8192);
+      for (let midi = 21; midi <= 95; midi++) {
+        const expectedHz = midiToFrequency(midi, 440);
+        for (const phase of [0.1, 0.73, 1.9, 2.8]) {
+          const result = detector.detect(
+            generateInstrumentTone(expectedHz, sampleRate, 8192, undefined, phase),
+            sampleRate
+          );
+          expect(result.frequency, `MIDI ${midi} @ ${sampleRate}`).not.toBeNull();
+          expect(Math.abs(centsBetween(result.frequency!, expectedHz))).toBeLessThan(0.03);
+        }
+      }
+    }
+  });
+
+  it('en Automático detecta un A0 bajo de tono (hasta −100 cents)', () => {
+    const a0 = midiToFrequency(21, 440);
+    for (const cents of [-100, -50, -20, -5, -1]) {
+      const hz = a0 * Math.pow(2, cents / 1200);
+      const result = detectPitchMPM(generateInstrumentTone(hz, 48000), 48000);
+      expect(result.frequency, `A0 ${cents} ct`).not.toBeNull();
+      expect(Math.abs(centsBetween(result.frequency!, hz))).toBeLessThan(0.05);
+    }
+  });
+
+  it('con ruido blanco a ~26 dB de SNR el error RMS en E2 queda por debajo de 0.5 cents', () => {
+    const sampleRate = 48000;
+    const e2 = midiToFrequency(40, 440);
+    let sumSq = 0;
+    let seed = 4242;
+    const trials = 20;
+    for (let trial = 0; trial < trials; trial++) {
+      const signal = generateInstrumentTone(e2, sampleRate, 8192, undefined, 0.3 * trial);
+      for (let i = 0; i < signal.length; i++) {
+        seed = (1103515245 * seed + 12345) & 0x7fffffff;
+        const u1 = (seed + 1) / 0x80000000;
+        seed = (1103515245 * seed + 12345) & 0x7fffffff;
+        const u2 = seed / 0x80000000;
+        signal[i]! += 0.25 * 0.05 * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+      const result = detectPitchMPM(signal, sampleRate);
+      expect(result.frequency).not.toBeNull();
+      sumSq += centsBetween(result.frequency!, e2) ** 2;
+    }
+    expect(Math.sqrt(sumSq / trials)).toBeLessThan(0.5);
+  });
+
+  it('no salta entre fundamental y 2º armónico cuando la fundamental ronda el 40% (histéresis)', () => {
+    const sampleRate = 48000;
+    const e1 = midiToFrequency(28, 440);
+    const B = 4e-4; // inarmonicidad típica de una cuerda grave de bajo
+    const detector = new MPMDetector(8192);
+    const readings: number[] = [];
+    for (let frame = 0; frame < 12; frame++) {
+      const a1 = frame % 2 === 0 ? 0.38 : 0.42; // cruza el umbral de entrada (0.40) en cada cuadro
+      const signal = generateInstrumentTone(e1, sampleRate, 8192, [a1, 1.0, 0.8, 0.55], 0.73, B);
+      const result = detector.detect(signal, sampleRate);
+      expect(result.frequency).not.toBeNull();
+      readings.push(result.frequency!);
+    }
+    for (let i = 1; i < readings.length; i++) {
+      expect(Math.abs(centsBetween(readings[i]!, readings[i - 1]!))).toBeLessThan(0.1);
+    }
   });
 });
