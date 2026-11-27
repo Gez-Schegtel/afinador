@@ -360,6 +360,224 @@ select {
   cursor: pointer;
 }
 
+/* Acordes (Specs 003 y 005) */
+.sub-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.sub-tab {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.sub-tab.is-active {
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--led-cyan);
+}
+
+.chords-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chords-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chords-main {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chord-info-card {
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chord-symbol {
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.chord-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--led-cyan);
+}
+
+.chord-alt {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.chord-facts {
+  margin: 6px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chord-facts dt {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.chord-facts dd {
+  margin: 2px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.chord-enharmonic {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #fbbf24;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--led-cyan);
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.voicing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.voicing-card {
+  margin: 0;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 12px;
+  padding: 8px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.voicing-card figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.voicing-tab {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.voicing-position {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.chord-diagram {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  display: block;
+}
+
+.chord-diagram .cd-string,
+.chord-diagram .cd-fret {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+
+.chord-diagram .cd-nut {
+  stroke: var(--text-primary);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.chord-diagram text {
+  text-anchor: middle;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+}
+
+.chord-diagram .cd-marker {
+  font-size: 11px;
+  fill: var(--text-secondary);
+}
+
+.chord-diagram .cd-fret-number {
+  font-size: 10px;
+  fill: var(--text-secondary);
+}
+
+.chord-diagram .cd-barre {
+  fill: var(--led-cyan);
+  opacity: 0.45;
+}
+
+.chord-diagram .cd-dot {
+  fill: var(--led-cyan);
+}
+
+.chord-diagram .cd-dot-root {
+  fill: var(--led-amber);
+}
+
+.chord-diagram .cd-dot-label {
+  font-size: 8.5px;
+  fill: var(--bg-outer);
+}
+
+.chord-diagram .cd-bottom-label {
+  font-size: 9px;
+  fill: var(--text-secondary);
+}
+
+.chord-diagram .cd-bottom-root {
+  fill: var(--led-amber);
+}
+
 /* Visor principal del pedal */
 .pedal-screen {
   flex: 1;
@@ -1031,6 +1249,13 @@ select {
     );
   }
 
+  /* #root es el ítem flexible del body: sin ancho fijo tomaría el de su contenido */
+  #root {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
   .pedal-chassis {
     width: 100%;
     max-width: 1020px;
@@ -1087,5 +1312,16 @@ select {
 
   .string-btns {
     grid-template-columns: repeat(var(--string-cols, 6), minmax(0, 1fr));
+  }
+
+  .chords-layout {
+    display: grid;
+    grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  .voicing-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
