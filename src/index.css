@@ -487,7 +487,7 @@ input {
 }
 
 .hz-input-wrap input {
-  width: 52px;
+  width: 62px;
   border: none;
   background: transparent;
   text-align: center;
@@ -496,8 +496,16 @@ input {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
   user-select: text;
   -webkit-user-select: text;
+}
+
+.hz-input-wrap input::-webkit-outer-spin-button,
+.hz-input-wrap input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .hz-suffix {
