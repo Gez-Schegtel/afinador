@@ -29,6 +29,7 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - Ventana DSP asimétrica en modo Manual (**`-11.5` a `+5` semitonos**, `clarityThreshold: 0.92`) para detectar cuerdas muy flojas sin saltos al 2º armónico, acompañada de sensibilidad mejorada en Automático (`minRms: 0.0035`, `minClarity: 0.72`).
 - Escala visual auto-rango en el medidor (**`±6 semitonos ↔ ±50 cents`**) con aviso en semitonos cuando estás lejos del tono.
 - Consola horizontal en **2 columnas** para pantallas de escritorio (`>= 900px`) con atajo de teclado **`Espacio`**, preservando intacta la vista móvil.
+- Workflow de CI [`.github/workflows/tests.yml`](./.github/workflows/tests.yml) (chequeo de tipos + Vitest en cada `push`/PR) e insignias de estado en el `README.md`.
 - Adopción formal de flujo por especificaciones (`docs/specs/`) y reglas de desarrollo para agentes (`GEMINI.md` / `CLAUDE.md`).
 
 ---

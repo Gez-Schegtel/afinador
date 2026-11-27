@@ -1,5 +1,9 @@
 # Afinador — Guitarra y Bajo
 
+[![Tests](https://github.com/Gez-Schegtel/afinador/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Gez-Schegtel/afinador/actions/workflows/tests.yml)
+[![Deploy PWA to GitHub Pages](https://github.com/Gez-Schegtel/afinador/actions/workflows/deploy-pages.yml/badge.svg?branch=main)](https://github.com/Gez-Schegtel/afinador/actions/workflows/deploy-pages.yml)
+[![Build Android APK](https://github.com/Gez-Schegtel/afinador/actions/workflows/build-apk.yml/badge.svg?branch=main)](https://github.com/Gez-Schegtel/afinador/actions/workflows/build-apk.yml)
+
 👉 **[Abrir e instalar la aplicación web (PWA): https://gez-schegtel.github.io/afinador/](https://gez-schegtel.github.io/afinador/)**
 
 Afinador cromático estilo pedal de escenario con **precisión estroboscópica (`< 0.05 cents`)** para **guitarra** y **bajo**, desarrollado como **Software Libre (`GNU GPL v3`)**.
