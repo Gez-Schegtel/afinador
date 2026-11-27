@@ -578,6 +578,152 @@ select {
   fill: var(--led-amber);
 }
 
+.identify-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.identify-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 10px 12px 12px;
+}
+
+.identify-open-btn {
+  align-self: flex-start;
+  margin-top: 6px;
+  flex: none;
+}
+
+.identify-clear-btn {
+  align-self: flex-start;
+  padding: 0 14px;
+}
+
+.identify-alternatives ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.identify-alternatives strong {
+  color: var(--text-primary);
+}
+
+.fretboard {
+  display: grid;
+  grid-template-columns: 30px repeat(var(--strings, 6), minmax(0, 1fr));
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 12px;
+  padding: 6px 8px 10px 4px;
+}
+
+.fb-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-head-num {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.fb-head-state {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.fb-head-state.is-muted {
+  color: var(--text-muted);
+}
+
+.fb-fret-num {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-fret-num.is-open {
+  color: var(--text-secondary);
+}
+
+.fb-marker {
+  position: absolute;
+  bottom: 1px;
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  color: var(--led-amber);
+}
+
+.fb-cell {
+  position: relative;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-bottom: 2px solid var(--border-chassis);
+  background: transparent;
+  cursor: pointer;
+}
+
+.fb-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: -2px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+.fb-cell.is-open-row {
+  border-bottom: 4px solid var(--text-primary);
+}
+
+.fb-cell.is-open-row::before {
+  opacity: 0;
+}
+
+.fb-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--led-cyan);
+  color: var(--bg-outer);
+  font-size: 0.66rem;
+  font-weight: 900;
+  z-index: 1;
+}
+
 /* Visor principal del pedal */
 .pedal-screen {
   flex: 1;
@@ -1323,5 +1469,17 @@ select {
 
   .voicing-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .identify-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    align-items: start;
+    gap: 18px;
+  }
+
+  /* Escritorio: mástil a la izquierda y resultado a la derecha. */
+  .identify-board {
+    order: -1;
   }
 }

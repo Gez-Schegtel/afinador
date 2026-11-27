@@ -51,6 +51,9 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - Motor de intervalos y acordes con ortografía correcta (`src/core/music/intervals.ts`, `chords.ts`): 17 raíces × 20 tipos, 46 combinaciones con dobles alteraciones verificadas ([`docs/specs/003-acordes.md`](./docs/specs/003-acordes.md)).
 - Generador de digitaciones (`voicings.ts`) validado en las 340 combinaciones y contra 23 formas de referencia; diagramas SVG accesibles.
 
+### Fase 9 — Identificador de Acordes (`Spec 005`)
+- Mástil interactivo para todos los instrumentos y afinaciones del catálogo; motor `chord-identify.ts` que lista todas las lecturas válidas (inversiones, quinta omitida y acordes simétricos) con ortografía de mínimas alteraciones ([`docs/specs/005-identificador-de-acordes.md`](./docs/specs/005-identificador-de-acordes.md)).
+
 ---
 
 ## 📋 Próximos Hitos y Backlog
@@ -58,6 +61,5 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - [ ] **Lanzamiento `v0.1.0` en GitHub Releases con firma propia:** generar `release.jks`, configurar los *Secrets* en GitHub y crear el tag `v0.1.0` para publicar el primer `.apk` oficial firmado.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
 - [ ] **Spec 007 — Identidad visual *Endurend Musical Gadgets***.
-- [ ] **Spec 005 — Identificador de acordes**.
 - [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
 - [ ] **Spec futuro — Monitor de Estabilidad Temporal (Octavación / Quintaje):** pequeño gráfico histórico de cents para verificar la caída de afinación del ataque al *sustain* al calibrar puentes y cejillas.

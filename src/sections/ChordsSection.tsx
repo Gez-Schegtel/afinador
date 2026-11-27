@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ChordIdentifier } from '../components/chords/ChordIdentifier';
 import {
   ChordDictionary,
   resolveDictionaryState,
@@ -9,7 +10,10 @@ import {
   routeToHash,
   type ChordsTab,
 } from '../navigation/routes';
-import { HeaderSubtitle } from '../shell/AppShell';
+import type { ChordReading } from '../core/music/chord-identify';
+import { findRootIndex } from '../core/music/chords';
+import { findTuning } from '../core/music/tunings';
+import { HeaderSubtitle, useAppShell } from '../shell/AppShell';
 
 const STORAGE_DICTIONARY_KEY = 'afinador_chords_dictionary';
 const TABS: readonly ChordsTab[] = ['dictionary', 'identify'];
@@ -43,6 +47,20 @@ export function ChordsSection({ tab }: ChordsSectionProps) {
     setDictionary((prev) => resolveDictionaryState({ ...prev, ...patch }));
   }, []);
 
+  const { navigate } = useAppShell();
+  const openInDictionary = useCallback(
+    (reading: ChordReading, tuningId: string) => {
+      const isGuitar = findTuning(tuningId)?.instrument.startsWith('guitar') ?? false;
+      updateDictionary({
+        rootIndex: findRootIndex(reading.root),
+        qualityId: reading.quality.id,
+        ...(isGuitar ? { tuningId } : {}),
+      });
+      navigate({ section: 'chords', tab: 'dictionary' });
+    },
+    [navigate, updateDictionary]
+  );
+
   return (
     <>
       <HeaderSubtitle>
@@ -67,10 +85,7 @@ export function ChordsSection({ tab }: ChordsSectionProps) {
       {tab === 'dictionary' ? (
         <ChordDictionary state={dictionary} onChange={updateDictionary} />
       ) : (
-        <section className="panel-card section-placeholder">
-          <span className="calibration-label">IDENTIFICAR ACORDE</span>
-          <p className="idle-hint">Disponible próximamente.</p>
-        </section>
+        <ChordIdentifier onOpenInDictionary={openInDictionary} />
       )}
     </>
   );
