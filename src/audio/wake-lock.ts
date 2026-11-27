@@ -55,10 +55,26 @@ export class ScreenWakeLocker {
       return false;
     }
 
+    if (this.sentinel && !this.sentinel.released) {
+      return true;
+    }
+
     try {
-      this.sentinel = await navigator.wakeLock.request('screen');
-      this.sentinel.addEventListener('release', () => {
-        this.onStatusChange?.(false);
+      const sentinel = await navigator.wakeLock.request('screen');
+      // Si disable() llegó mientras esperábamos, liberar el bloqueo recién obtenido.
+      if (!this.shouldKeepAwake) {
+        try {
+          await sentinel.release();
+        } catch {
+          // Ignorar errores al liberar
+        }
+        return false;
+      }
+      this.sentinel = sentinel;
+      sentinel.addEventListener('release', () => {
+        if (this.sentinel === sentinel) {
+          this.onStatusChange?.(false);
+        }
       });
       this.onStatusChange?.(true);
       return true;

@@ -90,14 +90,14 @@ Notas de grave a agudo. MIDI y desplazamientos verificados por script y luego po
 
 **Regla de avisos:** «Sube la tensión» se **calcula** (alguna cuerda con `Δ > 0`) salvo en las afinaciones marcadas como «requiere juego específico». En esas, comparar índice a índice con la estándar no tiene sentido porque cambia el juego de cuerdas.
 
-**Límite inferior:** el catálogo se restringe a cuerdas `>= A0` (MIDI 21, 27.5 Hz), coherente con `TARGET_NOTE_MIN_MIDI`, el piso DSP de 25 Hz en Manual y el pasa-altos de 24 Hz. *Drop A* de bajo de 5 cuerdas funciona porque esta función usa el modo Manual: en Automático, un A0 bajo de tono no se detecta (ver [auditoría H-04](../auditoría.md#h-04--a0-275-hz-es-un-borde-duro-en-modo-automático)).
+**Límite inferior:** el catálogo se restringe a cuerdas `>= A0` (MIDI 21, 27.5 Hz), coherente con `TARGET_NOTE_MIN_MIDI`, el piso DSP de 25 Hz en Manual y el pasa-altos de 24 Hz. *Drop A* de bajo de 5 cuerdas funciona porque esta función usa el modo Manual, cuyo piso es de 25 Hz.
 
 ## 3. Impacto Técnico (DSP / Audio / UI)
 
 - **`src/core/music/spelling.ts` (nuevo, puro):** tipos `PitchName` / `SpelledNote`, conversión a MIDI, formato (`♯ ♭ 𝄪 𝄫`), nombres latinos (`Mi♭`), parser (`'Eb2'`, `'F♯1'`) y ortografía por defecto con sostenidos. Es la base de los specs 003 y 005.
 - **`src/core/music/tunings.ts` (nuevo, puro):** instrumentos, catálogo, cambios respecto de la estándar, regla de tensión y validación de valores persistidos.
 - **`src/core/music/notes.ts`:** `describeMidiNote()` y `resolveChromaticNote()` aceptan una ortografía opcional para la nota objetivo; `NoteDescriptor` suma `accidental`. Se eliminan `QUICK_GUITAR_STRINGS` / `QUICK_BASS_STRINGS`, reemplazados por el catálogo.
-- **UI:** `TuningPicker.tsx` (nuevo, reutilizable en los specs 003 y 005), `TargetNoteControl.tsx` (selectores, resumen, avisos y botones de cuerda), `TunerGauge.tsx` (indicador `♭`), `App.tsx` (estado y persistencia; al crear el motor se le envía la configuración Manual vigente, ver auditoría H-13).
+- **UI:** `TuningPicker.tsx` (nuevo, reutilizable en los specs 003 y 005), `TargetNoteControl.tsx` (selectores, resumen, avisos y botones de cuerda), `TunerGauge.tsx` (indicador `♭`), `App.tsx` (estado y persistencia; al crear el motor se le envía la configuración Manual vigente, porque el efecto del modo Manual corre antes de que el motor exista).
 - **DSP:** sin cambios. Cada cuerda usa la ventana Manual existente: en *Drop D*, una 6ª todavía en E2 queda +2 st sobre D2, dentro del margen +5 st, y el visor indica «BAJAR». Sin asignaciones nuevas en el worklet.
 
 ## 4. Fuera de Alcance

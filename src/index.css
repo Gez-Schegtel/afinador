@@ -165,6 +165,59 @@ select {
   gap: 12px;
 }
 
+/* Navegación entre secciones (Spec 006) */
+.section-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.section-nav-btn {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.section-nav-btn.is-active {
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--led-cyan);
+}
+
+.section-loading {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.panel-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-placeholder {
+  align-items: flex-start;
+}
+
 /* Visor principal del pedal */
 .pedal-screen {
   flex: 1;
@@ -796,6 +849,11 @@ select {
 
 .footswitch-btn:active {
   transform: scale(0.99);
+}
+
+.footswitch-btn:disabled {
+  cursor: progress;
+  opacity: 0.75;
 }
 
 .footswitch-btn.is-listening {
