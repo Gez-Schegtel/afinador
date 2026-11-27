@@ -22,6 +22,21 @@ interface TunerGaugeProps {
 const MAX_ARC_RAD = (68 * Math.PI) / 180;
 const LED_COUNT = 41; // -max a +max
 
+/** Colores del visor tomados de las variables CSS del tema (Spec 007), con valores de respaldo. */
+function readGaugePalette() {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  return {
+    idle: v('--gauge-idle', '#64748b'),
+    ledOff: v('--gauge-led-off', '#1e293b'),
+    centerIdle: v('--gauge-center-idle', '#334155'),
+    tick: v('--gauge-tick', '#64748b'),
+    tickStrong: v('--gauge-tick-strong', '#94a3b8'),
+    screen: v('--bg-screen', '#070a12'),
+    selection: v('--led-cyan', '#38bdf8'),
+  };
+}
+
 function centsToAngle(cents: number, maxDisplayCents: number): number {
   const clamped = Math.max(-maxDisplayCents, Math.min(maxDisplayCents, cents));
   return -Math.PI / 2 + (clamped / maxDisplayCents) * MAX_ARC_RAD;
@@ -50,6 +65,7 @@ export function TunerGauge({
     const arcCtx = arcCanvas.getContext('2d');
     if (!strobeCtx || !arcCtx) return;
 
+    const palette = readGaugePalette();
     let animationId = 0;
     let currentNeedleCents = 0;
     let strobePhase = 0;
@@ -110,7 +126,7 @@ export function TunerGauge({
 
       const activeScaleMax = isCoarseScale ? 600 : 50;
 
-      let accentColor = '#64748b';
+      let accentColor = palette.idle;
       if (active) {
         if (lockedInTune) {
           accentColor = '#10b981';
@@ -154,15 +170,15 @@ export function TunerGauge({
       }
 
       const vignette = strobeCtx.createLinearGradient(0, 0, sw, 0);
-      vignette.addColorStop(0, '#070a12');
-      vignette.addColorStop(0.14, 'rgba(7, 10, 18, 0)');
-      vignette.addColorStop(0.86, 'rgba(7, 10, 18, 0)');
-      vignette.addColorStop(1, '#070a12');
+      vignette.addColorStop(0, palette.screen);
+      vignette.addColorStop(0.14, 'transparent');
+      vignette.addColorStop(0.86, 'transparent');
+      vignette.addColorStop(1, palette.screen);
       strobeCtx.globalAlpha = 1;
       strobeCtx.fillStyle = vignette;
       strobeCtx.fillRect(0, 0, sw, sh);
 
-      strobeCtx.strokeStyle = lockedInTune ? '#10b981' : '#475569';
+      strobeCtx.strokeStyle = lockedInTune ? '#10b981' : palette.idle;
       strobeCtx.lineWidth = lockedInTune ? 2.5 : 2;
       strobeCtx.beginPath();
       strobeCtx.moveTo(sw / 2, 0);
@@ -204,7 +220,7 @@ export function TunerGauge({
         const distFromNeedle = Math.abs(currentNeedleCents - ledCents);
 
         let lit = false;
-        let ledColor = '#1e293b';
+        let ledColor = palette.ledOff;
 
         if (active) {
           if (isCenterLed && lockedInTune) {
@@ -224,7 +240,7 @@ export function TunerGauge({
                 : 'rgba(251, 113, 133, 0.28)';
           }
         } else if (isCenterLed) {
-          ledColor = '#334155';
+          ledColor = palette.centerIdle;
         }
 
         const innerR = radius - (isCenterLed ? 16 : 10);
@@ -262,7 +278,7 @@ export function TunerGauge({
         const labelR = radius + 21;
         const lx = cx + Math.cos(angle) * labelR;
         const ly = cy + Math.sin(angle) * labelR;
-        arcCtx.fillStyle = c === 0 ? '#10b981' : isCoarseScale ? '#94a3b8' : '#64748b';
+        arcCtx.fillStyle = c === 0 ? '#10b981' : isCoarseScale ? palette.tickStrong : palette.tick;
         const label = isCoarseScale
           ? c === 0
             ? '0'
@@ -275,7 +291,7 @@ export function TunerGauge({
 
       if (isCoarseScale) {
         arcCtx.font = '700 9.5px system-ui, -apple-system, sans-serif';
-        arcCtx.fillStyle = '#38bdf8';
+        arcCtx.fillStyle = palette.selection;
         arcCtx.fillText(
           'ESCALA AMPLIA (±6 SEMITONOS)',
           cx,
@@ -306,12 +322,12 @@ export function TunerGauge({
 
       arcCtx.beginPath();
       arcCtx.arc(cx, cy, 9, 0, Math.PI * 2);
-      arcCtx.fillStyle = active ? accentColor : '#334155';
+      arcCtx.fillStyle = active ? accentColor : palette.centerIdle;
       arcCtx.fill();
 
       arcCtx.beginPath();
       arcCtx.arc(cx, cy, 4, 0, Math.PI * 2);
-      arcCtx.fillStyle = '#070a12';
+      arcCtx.fillStyle = palette.screen;
       arcCtx.fill();
 
       animationId = requestAnimationFrame(render);

@@ -1,4 +1,4 @@
-# Roadmap — Afinador (Guitarra y Bajo)
+# Roadmap — Endurend Musical Gadgets
 
 Registro cronológico de lo construido hasta el momento y próximos hitos planificados para el proyecto. Para proponer o detallar nuevas funcionalidades, revisá [`docs/specs/README.md`](./docs/specs/README.md).
 
@@ -54,6 +54,10 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 ### Fase 9 — Identificador de Acordes (`Spec 005`)
 - Mástil interactivo para todos los instrumentos y afinaciones del catálogo; motor `chord-identify.ts` que lista todas las lecturas válidas (inversiones, quinta omitida y acordes simétricos) con ortografía de mínimas alteraciones ([`docs/specs/005-identificador-de-acordes.md`](./docs/specs/005-identificador-de-acordes.md)).
 
+### Fase 10 — Identidad Visual *Endurend Musical Gadgets* (`Spec 007`)
+- Nuevo nombre visible (*Endurend*, sin cambiar identificadores técnicos), logo en el encabezado, gabinete ocre con sol psicodélico, placas y visor violeta y *footswitch* metálico con LED tipo joya ([`docs/specs/007-identidad-visual-endurend.md`](./docs/specs/007-identidad-visual-endurend.md)).
+- Íconos PNG de la PWA (192, 512 y *maskable*), íconos y splash de Android regenerados con la marca (reemplazan el logo por defecto de Capacitor) y paleta en variables CSS con contraste ≥ 4.5:1.
+
 ---
 
 ## 📋 Próximos Hitos y Backlog
@@ -66,6 +70,5 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
   - si la WebView soporta la *Screen Wake Lock API*: en ese caso, reemplazar `FLAG_KEEP_SCREEN_ON` (hoy mantiene la pantalla encendida aunque el afinador esté detenido) por el bloqueo que ya usa la web;
   - si la app funciona sin el permiso `INTERNET` (es 100% offline): quitarlo haría cumplir esa promesa a nivel del sistema operativo.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
-- [ ] **Spec 007 — Identidad visual *Endurend Musical Gadgets***.
 - [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
 - [ ] **Spec futuro — Monitor de Estabilidad Temporal (Octavación / Quintaje):** pequeño gráfico histórico de cents para verificar la caída de afinación del ataque al *sustain* al calibrar puentes y cejillas.

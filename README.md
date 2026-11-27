@@ -1,4 +1,4 @@
-# Afinador — Guitarra y Bajo
+# Endurend Musical Gadgets — Afinador, Acordes y Metrónomo
 
 [![Tests](https://github.com/Gez-Schegtel/afinador/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Gez-Schegtel/afinador/actions/workflows/tests.yml)
 [![Deploy PWA to GitHub Pages](https://github.com/Gez-Schegtel/afinador/actions/workflows/deploy-pages.yml/badge.svg?branch=main)](https://github.com/Gez-Schegtel/afinador/actions/workflows/deploy-pages.yml)
@@ -6,7 +6,9 @@
 
 👉 **[Abrir e instalar la aplicación web (PWA): https://gez-schegtel.github.io/afinador/](https://gez-schegtel.github.io/afinador/)**
 
-Afinador cromático estilo pedal de escenario con **precisión estroboscópica (`< 0.05 cents`)** para **guitarra** y **bajo**, desarrollado como **Software Libre (`GNU GPL v3`)**.
+Caja de herramientas para **guitarra** y **bajo** con estética de pedal de fuzz y tapa de disco psicodélico: **afinador cromático** con **precisión estroboscópica (`< 0.05 cents`)** y catálogo de afinaciones, **diccionario e identificador de acordes** y **metrónomo**. Desarrollado como **Software Libre (`GNU GPL v3`)**.
+
+La identidad visual (logo *Endurend*, gabinete ocre con sol psicodélico, visor violeta y *footswitch* metálico) está descripta en el [Spec 007](./docs/specs/007-identidad-visual-endurend.md). El paquete Android conserva su identificador `org.gezschegtel.afinador` y la PWA su dirección `/afinador/`, así las instalaciones existentes se siguen actualizando.
 
 Funciona como aplicación web progresiva (**PWA**) instalable **100% sin internet** en Android y escritorio, procesando todo el audio localmente en el dispositivo (cero servidores externos, cero telemetría). Se despliega automáticamente en **[GitHub Pages](https://gez-schegtel.github.io/afinador/)** y cuenta con estructura preparada para distribuirse como paquete libre `.apk` en **GitHub Releases** y **F-Droid** mediante **Capacitor**.
 

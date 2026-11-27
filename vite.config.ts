@@ -16,26 +16,30 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/icon.svg'],
+        includeAssets: ['icons/*.png'],
         manifest: {
+          // `id`, `start_url` y `scope` no cambian con el nuevo nombre: cambiarlos rompería las
+          // instalaciones existentes de la PWA.
           id: base,
-          name: 'Afinador Cromático — Guitarra y Bajo',
-          short_name: 'Afinador',
+          name: 'Endurend Musical Gadgets',
+          short_name: 'Endurend',
           description:
-            'Afinador cromático estilo pedal de precisión estroboscópica (< 0.05 cents) para guitarra y bajo, con calibración A4 ajustable y modo offline.',
-          theme_color: '#05070d',
-          background_color: '#05070d',
+            'Afinador cromático estilo pedal (< 0.05 cents), afinaciones de guitarra y bajo, diccionario e identificador de acordes y metrónomo. Libre y offline.',
+          theme_color: '#e0a83f',
+          background_color: '#f0d79a',
           display: 'standalone',
           orientation: 'portrait',
           lang: 'es',
           start_url: base,
           scope: base,
           icons: [
+            { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
             {
-              src: 'icons/icon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'any maskable',
+              src: 'icons/icon-maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
             },
           ],
         },

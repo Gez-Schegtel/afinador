@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#05070D</color>
+    <!-- Arena de la identidad Endurend (Spec 007) -->
+    <color name="ic_launcher_background">#F0D79A</color>
 </resources>

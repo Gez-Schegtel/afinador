@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Afinador</string>
-    <string name="title_activity_main">Afinador</string>
+    <string name="app_name">Endurend</string>
+    <string name="title_activity_main">Endurend</string>
     <string name="package_name">org.gezschegtel.afinador</string>
     <string name="custom_url_scheme">org.gezschegtel.afinador</string>
 </resources>

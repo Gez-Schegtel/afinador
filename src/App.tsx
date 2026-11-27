@@ -25,9 +25,9 @@ const ChordsSection = lazy(() => import('./sections/ChordsSection'));
 const MetronomeSection = lazy(() => import('./sections/MetronomeSection'));
 
 const SECTION_TITLES: Readonly<Record<SectionId, string>> = {
-  tuner: 'AFINADOR CROMÁTICO',
-  chords: 'ACORDES',
-  metronome: 'METRÓNOMO',
+  tuner: 'Afinador cromático',
+  chords: 'Acordes',
+  metronome: 'Metrónomo',
 };
 
 export function App() {
@@ -58,15 +58,13 @@ export function App() {
       <div className="pedal-chassis" data-section={route.section}>
         <header className="pedal-header">
           <div className="brand">
-            <img
-              src={`${import.meta.env.BASE_URL}icons/icon.svg`}
-              alt=""
-              className="brand-icon"
-            />
-            <div>
-              <h1 className="brand-title">{SECTION_TITLES[route.section]}</h1>
-              <p className="brand-subtitle" ref={setSubtitleEl} />
-            </div>
+            <h1 className="brand-heading">
+              <span className="brand-logo" aria-hidden="true" />
+              <span className="visually-hidden">
+                Endurend Musical Gadgets: {SECTION_TITLES[route.section]}
+              </span>
+            </h1>
+            <p className="brand-subtitle" ref={setSubtitleEl} />
           </div>
           <div className="header-right" ref={setActionsEl} />
         </header>

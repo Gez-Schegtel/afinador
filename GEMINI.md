@@ -1,4 +1,4 @@
-# Reglas del Proyecto — Afinador (Guitarra y Bajo)
+# Reglas del Proyecto — Endurend Musical Gadgets (Afinador, Acordes y Metrónomo)
 
 Estas reglas rigen todo trabajo de desarrollo, refactoring, documentación y automatización en este repositorio (tanto para Antigravity como para Claude Code).
 
