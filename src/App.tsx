@@ -5,11 +5,13 @@ import {
   clampA4,
   resolveChromaticNote,
   type ChromaticMatch,
+  type HysteresisContext,
 } from './core/music/notes';
 import { CalibrationControl } from './components/CalibrationControl';
 import { TunerGauge, type GaugeFrameData } from './components/TunerGauge';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
+const UI_READOUT_INTERVAL_MS = 85; // ~12 Hz para lectura digital calma y legible
 
 function loadInitialA4(): number {
   try {
@@ -34,6 +36,11 @@ export function App() {
 
   const a4Ref = useRef<number>(a4Hz);
   const lastFrequencyRef = useRef<number | null>(null);
+  const hysteresisRef = useRef<HysteresisContext>({
+    previousMidi: null,
+    previousDirection: null,
+  });
+  const lastUiUpdateTimeRef = useRef<number>(0);
 
   const gaugeFrameRef = useRef<GaugeFrameData>({
     match: null,
@@ -51,7 +58,15 @@ export function App() {
     }
 
     if (lastFrequencyRef.current !== null) {
-      const updated = resolveChromaticNote(lastFrequencyRef.current, a4Hz);
+      const updated = resolveChromaticNote(
+        lastFrequencyRef.current,
+        a4Hz,
+        hysteresisRef.current
+      );
+      hysteresisRef.current = {
+        previousMidi: updated.note.midi,
+        previousDirection: updated.direction,
+      };
       gaugeFrameRef.current.match = updated;
       setDisplayMatch(updated);
     }
@@ -62,23 +77,52 @@ export function App() {
   useEffect(() => {
     const engine = new TunerEngine({
       onPitch: (reading) => {
+        const now = performance.now();
         const level = Math.min(1, Math.sqrt(reading.rms * 12));
-        setInputLevel(level);
 
         if (reading.frequency !== null) {
           lastFrequencyRef.current = reading.frequency;
-          const match = resolveChromaticNote(reading.frequency, a4Ref.current);
+          const prevCtx = hysteresisRef.current;
+          const match = resolveChromaticNote(
+            reading.frequency,
+            a4Ref.current,
+            prevCtx
+          );
 
+          const stateChanged =
+            match.note.midi !== prevCtx.previousMidi ||
+            match.direction !== prevCtx.previousDirection;
+
+          hysteresisRef.current = {
+            previousMidi: match.note.midi,
+            previousDirection: match.direction,
+          };
+
+          // El Canvas 60 FPS recibe siempre el último cuadro exacto al instante:
           gaugeFrameRef.current = {
             match,
             isHolding: reading.isHolding,
             rms: reading.rms,
             isListening: true,
           };
-          setDisplayMatch(match);
-          setIsHolding(reading.isHolding);
+
+          // El texto numérico se refresca inmediatamente ante cambios de nota/estado,
+          // o cada ~85 ms para que los dígitos sean serenos y fáciles de leer.
+          if (
+            stateChanged ||
+            now - lastUiUpdateTimeRef.current >= UI_READOUT_INTERVAL_MS
+          ) {
+            lastUiUpdateTimeRef.current = now;
+            setDisplayMatch(match);
+            setIsHolding(reading.isHolding);
+            setInputLevel(level);
+          }
         } else {
           lastFrequencyRef.current = null;
+          hysteresisRef.current = {
+            previousMidi: null,
+            previousDirection: null,
+          };
           gaugeFrameRef.current = {
             match: null,
             isHolding: false,
@@ -87,6 +131,10 @@ export function App() {
           };
           setDisplayMatch(null);
           setIsHolding(false);
+          if (now - lastUiUpdateTimeRef.current >= UI_READOUT_INTERVAL_MS) {
+            lastUiUpdateTimeRef.current = now;
+            setInputLevel(level);
+          }
         }
       },
       onStateChange: (running, sr) => {
@@ -94,6 +142,10 @@ export function App() {
         setSampleRate(sr);
         if (!running) {
           lastFrequencyRef.current = null;
+          hysteresisRef.current = {
+            previousMidi: null,
+            previousDirection: null,
+          };
           gaugeFrameRef.current = {
             match: null,
             isHolding: false,

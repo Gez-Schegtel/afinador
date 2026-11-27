@@ -1,10 +1,15 @@
 /**
- * Estabilizador temporal de alta precisión para afinador tipo pedal:
- * - Filtro de mediana de 5 muestras en espacio logarítmico (semitonos) para rechazar
- *   cualquier transitorio de ataque de púa o dedos sin sesgar la media.
- * - Promedio exponencial ponderado por claridad^2 con detección rápida de giro de clavija
- *   o cambio de cuerda: clava centésimas de cent al sostener una nota y responde al instante
- *   al mover la afinación.
+ * Estabilizador de tono estilo pedal de escenario (Boss TU-3 / Korg Pitchblack):
+ *
+ * 1. Supresión de ataque de púa (Attack Blanking): ignora los primeros ~45 ms cuando la
+ *    energía RMS salta bruscamente al golpear la cuerda (donde la tensión transitoria
+ *    sube artificialmente el tono y la onda es caótica).
+ * 2. Histéresis de claridad: exige claridad >= 0.82 para enganchar una nota nueva desde
+ *    silencio y la sostiene hasta claridad >= 0.74 durante el decay.
+ * 3. Media Recortada Intercuartil (12 cuadros ≈ 255 ms): ordena las últimas lecturas,
+ *    descarta el 25% inferior y superior de picos/batidos acústicos y promedia el centro.
+ * 4. Filtro EMA de doble velocidad: firme y sedoso dentro de la misma nota (< 18 cents)
+ *    para clavar la aguja sin oscilación, y ágil al girar la clavija o cambiar de cuerda.
  */
 
 export interface SmoothedPitch {
@@ -15,13 +20,17 @@ export interface SmoothedPitch {
 }
 
 export interface PitchSmootherOptions {
-  /** Factor base de respuesta en ajuste ultra-fino (default: 0.30) */
-  fineAlpha?: number;
-  /** Umbral en semitonos para reinicio instantáneo al cambiar de nota (default: 0.65) */
+  /** Factor EMA calmo cuando la nota está cerca del reposo (< 18 cents) (default: 0.085) */
+  steadyAlpha?: number;
+  /** Factor EMA ágil al girar activamente la clavija (18..65 cents) (default: 0.30) */
+  tuningAlpha?: number;
+  /** Umbral en semitonos para considerar cambio a otra nota/cuerda (default: 0.65) */
   jumpSemitones?: number;
-  /** Tiempo en ms que se retiene la última nota válida al apagarse la cuerda (default: 550) */
+  /** Tiempo en ms que se retiene la nota clavada tras apagar la cuerda (default: 650) */
   holdMs?: number;
 }
+
+const HISTORY_SIZE = 12;
 
 function freqToLogSemitones(freq: number): number {
   return 12 * Math.log2(freq);
@@ -31,33 +40,55 @@ function logSemitonesToFreq(semi: number): number {
   return Math.pow(2, semi / 12);
 }
 
-function medianOfSmallArray(values: readonly number[]): number {
-  const copy = values.slice().sort((a, b) => a - b);
-  const mid = copy.length >>> 1;
-  return copy[mid]!;
+function interquartileTrimmedMean(values: readonly number[]): number {
+  const n = values.length;
+  if (n === 1) return values[0]!;
+  const sorted = values.slice().sort((a, b) => a - b);
+  if (n <= 4) {
+    const mid = n >>> 1;
+    return n % 2 === 1
+      ? sorted[mid]!
+      : 0.5 * (sorted[mid - 1]! + sorted[mid]!);
+  }
+  const trim = Math.floor(n * 0.25);
+  let sum = 0;
+  let count = 0;
+  for (let i = trim; i < n - trim; i++) {
+    sum += sorted[i]!;
+    count++;
+  }
+  return sum / count;
 }
 
 export class PitchSmoother {
-  private readonly fineAlpha: number;
+  private readonly steadyAlpha: number;
+  private readonly tuningAlpha: number;
   private readonly jumpSemitones: number;
   private readonly holdMs: number;
 
   private readonly history: number[] = [];
+  private readonly jumpCandidates: number[] = [];
   private smoothedSemi: number | null = null;
   private lastClarity = 0;
   private lastValidTimestamp = 0;
+  private prevRms = 0;
+  private attackBlankFrames = 0;
 
   constructor(options?: PitchSmootherOptions) {
-    this.fineAlpha = options?.fineAlpha ?? 0.3;
+    this.steadyAlpha = options?.steadyAlpha ?? 0.085;
+    this.tuningAlpha = options?.tuningAlpha ?? 0.3;
     this.jumpSemitones = options?.jumpSemitones ?? 0.65;
-    this.holdMs = options?.holdMs ?? 550;
+    this.holdMs = options?.holdMs ?? 650;
   }
 
   public reset(): void {
     this.history.length = 0;
+    this.jumpCandidates.length = 0;
     this.smoothedSemi = null;
     this.lastClarity = 0;
     this.lastValidTimestamp = 0;
+    this.prevRms = 0;
+    this.attackBlankFrames = 0;
   }
 
   public update(
@@ -66,40 +97,93 @@ export class PitchSmoother {
     rms: number,
     nowMs: number
   ): SmoothedPitch {
-    if (frequency !== null && frequency > 0 && Number.isFinite(frequency)) {
+    // Detectar golpe brusco de púa/dedo cuando ya había una nota sonando
+    if (
+      this.smoothedSemi !== null &&
+      this.prevRms > 0.008 &&
+      rms > this.prevRms * 2.6
+    ) {
+      this.attackBlankFrames = 2;
+    }
+    this.prevRms = rms;
+
+    if (this.attackBlankFrames > 0) {
+      this.attackBlankFrames--;
+      if (this.smoothedSemi !== null) {
+        return {
+          frequency: logSemitonesToFreq(this.smoothedSemi),
+          clarity: this.lastClarity,
+          rms,
+          isHolding: false,
+        };
+      }
+    }
+
+    const requiredClarity = this.smoothedSemi === null ? 0.82 : 0.74;
+
+    if (
+      frequency !== null &&
+      frequency > 0 &&
+      Number.isFinite(frequency) &&
+      clarity >= requiredClarity
+    ) {
       const rawSemi = freqToLogSemitones(frequency);
 
+      // Si salta a otra cuerda/nota (> 65 cents), exigir 3 cuadros coherentes antes de saltar
       if (
         this.smoothedSemi !== null &&
         Math.abs(rawSemi - this.smoothedSemi) > this.jumpSemitones
       ) {
-        // Si ya llevamos 2 cuadros seguidos lejos, el músico tocó otra nota: limpiar historial viejo
-        const prev = this.history[this.history.length - 1];
-        if (prev !== undefined && Math.abs(rawSemi - prev) < 0.25) {
-          this.history.length = 0;
-          this.smoothedSemi = rawSemi;
+        this.jumpCandidates.push(rawSemi);
+        if (this.jumpCandidates.length >= 3) {
+          const first = this.jumpCandidates[this.jumpCandidates.length - 3]!;
+          const second = this.jumpCandidates[this.jumpCandidates.length - 2]!;
+          if (
+            Math.abs(rawSemi - second) < 0.25 &&
+            Math.abs(second - first) < 0.25
+          ) {
+            // Nueva nota confirmada: salto limpio sin arrastrar el promedio anterior
+            this.history.length = 0;
+            this.jumpCandidates.length = 0;
+            this.smoothedSemi = interquartileTrimmedMean([
+              first,
+              second,
+              rawSemi,
+            ]);
+          } else if (this.jumpCandidates.length > 4) {
+            this.jumpCandidates.shift();
+          }
         }
+        // Mientras no se confirme el cambio de nota, mantener lectura previa sin sacudir la aguja
+        if (this.jumpCandidates.length > 0) {
+          this.lastValidTimestamp = nowMs;
+          return {
+            frequency: logSemitonesToFreq(this.smoothedSemi),
+            clarity: this.lastClarity,
+            rms,
+            isHolding: false,
+          };
+        }
+      } else {
+        this.jumpCandidates.length = 0;
       }
 
       this.history.push(rawSemi);
-      if (this.history.length > 5) {
+      if (this.history.length > HISTORY_SIZE) {
         this.history.shift();
       }
 
-      const filteredSemi = medianOfSmallArray(this.history);
+      const trimmedSemi = interquartileTrimmedMean(this.history);
 
-      if (
-        this.smoothedSemi === null ||
-        Math.abs(filteredSemi - this.smoothedSemi) > this.jumpSemitones
-      ) {
-        this.smoothedSemi = filteredSemi;
+      if (this.smoothedSemi === null) {
+        this.smoothedSemi = trimmedSemi;
       } else {
-        // Si la cuerda se está moviendo (girando clavija > 3 cents), acelerar seguimiento;
-        // si está quieta (< 3 cents), suavizar ponderando por clarity^2 para precisión estroboscópica.
-        const diffSemitones = Math.abs(filteredSemi - this.smoothedSemi);
-        const dynamicBoost = diffSemitones > 0.03 ? 0.55 : this.fineAlpha;
-        const weight = Math.max(0.15, Math.min(1, clarity * clarity)) * dynamicBoost;
-        this.smoothedSemi += weight * (filteredSemi - this.smoothedSemi);
+        const diffSemitones = Math.abs(trimmedSemi - this.smoothedSemi);
+        // < 18 cents (0.18 semitonos): modo ultra-estable para clavar la nota;
+        // >= 18 cents: seguimiento fluido al girar la clavija.
+        const baseAlpha =
+          diffSemitones > 0.18 ? this.tuningAlpha : this.steadyAlpha;
+        this.smoothedSemi += baseAlpha * (trimmedSemi - this.smoothedSemi);
       }
 
       this.lastClarity = clarity;
@@ -126,6 +210,7 @@ export class PitchSmoother {
     }
 
     this.history.length = 0;
+    this.jumpCandidates.length = 0;
     this.smoothedSemi = null;
     return {
       frequency: null,

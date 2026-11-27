@@ -14,37 +14,39 @@ Funciona como aplicación web progresiva (**PWA**) instalable **100% sin interne
 | :--- | :--- |
 | **Modo de operación** | **Cromático puro estilo pedal** (detecta automáticamente las 12 notas `C..B` en cualquier afinación sin selectores previos) |
 | **Rango de frecuencias** | **`27.5 Hz` (`A0`) a `2000 Hz`** — cubre bajo de 4, 5 y 6 cuerdas (`B0 = 30.87 Hz`, `E1 = 41.20 Hz`, *Drop A*) y guitarra de 6, 7 y 8 cuerdas en todo el diapasón |
-| **Precisión algorítmica** | **`< 0.03 cents`** en señales periódicas limpias y **`< 0.05 cents`** con fundamental atenuada (*verificado por suite automatizada*) |
-| **Tolerancia de centro exacto** | **`±1.0 cent`** para encendido del indicador verde central (`±1 ct EXACTO`), acompañado de visor estroboscópico continuo sensible a `< 0.1 cents` |
+| **Precisión algorítmica** | **`< 0.05 cents`** en señales periódicas y **`< 0.08 cents`** con fundamental atenuada (*verificado por suite automatizada*) |
+| **Bloqueo `✓ AFINADO` (Schmitt trigger)** | Entrada en **`±2.5 cents`** con histéresis de retención hasta **`±4.0 cents`** (evita parpadeos de color), acompañado de visor estroboscópico continuo con zona muerta fina en `±0.35 cents` |
 | **Calibración de referencia (`A4`)** | Ajustable entre **`415.0 Hz` y `466.0 Hz`** en pasos de `0.1` / `0.5` / `1 Hz` (con accesos directos a `430`, `432`, `440`, `442` y `444 Hz`), persistida en `localStorage` |
 | **Ventana y tasa de análisis** | Ventana deslizante de **`8192` muestras** (~`170.7 ms` a `48 kHz`) con avance (*hop*) de **`1024` muestras** (~`21.3 ms` = **~46.9 lecturas/segundo**) en hilo dedicado `AudioWorklet` |
 | **Precisión numérica interna** | Coma flotante IEEE-754 de **64 bits (`Float64Array`)** sin asignaciones dinámicas en tiempo real |
 
 ---
 
-## 2. Arquitectura del Motor DSP (Por qué es tan preciso)
+## 2. Arquitectura del Motor DSP (Precisión + Estabilidad de Pedal)
 
-Los afinadores convencionales suelen emplear una FFT simple o autocorrelación de 32 bits con interpolación parabólica sobre ventanas cortas, lo que provoca tres fallas habituales: saltos de octava cuando los armónicos superan a la nota fundamental, falta de ciclos suficientes en cuerdas graves de bajo (`B0` / `E1`) y un sesgo matemático de `0.3–1.2 cents` en notas agudas.
+Los afinadores convencionales suelen emplear una FFT simple o autocorrelación de 32 bits con interpolación parabólica sobre ventanas cortas, lo que provoca saltos de octava, falta de ciclos en graves de bajo (`B0` / `E1`), sesgo en agudos o una aguja nerviosa imposible de clavar en salas reales con micrófono.
 
-Este programa resuelve los tres problemas mediante un **motor híbrido de dos etapas** (`src/core/dsp/`):
+Este programa resuelve ambos frentes (máxima precisión e inmunidad acústica) mediante una cadena DSP de 4 etapas (`src/audio/pitch-worklet.ts` y `src/core/dsp/`):
 
-1. **Etapa 1 — `Float64` FFT-MPM (`McLeod Pitch Method` acelerado por Wiener–Khinchin):**
-   * Elimina el *offset* DC y aplica una puerta de ruido **RMS** (`minRms = 0.006`).
-   * Calcula la autocorrelación lineal exacta en $O(N \log N)$ usando una **FFT Radix-2 propia de `16384` puntos** (`src/core/dsp/fft.ts`) combinada con la recurrencia exacta de energía de McLeod & Wyvill para obtener la **NSDF (*Normalized Square Difference Function*)**.
-   * Extrae el primer *key maximum* que alcanza el `90%` del pico global de claridad. Esto garantiza identificar el período fundamental real incluso cuando el micrófono de un teléfono atenúa subgraves y el 2º o 3º armónico entra con mucha mayor amplitud.
-2. **Etapa 2 — Refinamiento Estroboscópico por Diferencia de Fase (`Phase Vocoder` con ventana Blackman–Harris de 4 términos):**
-   * Divide la ventana actual de `8192` muestras en dos sub-ventanas *Blackman–Harris* de `7168` muestras desplazadas exactamente $\Delta N = 1024$ muestras (rechazo de lóbulos laterales **> 92 dB** desde `27.5 Hz` hacia arriba).
-   * Mide el avance de fase instantáneo exacto sobre la frecuencia fundamental $f_0$ (evitando que la *inarmonicidad física* de los armónicos altos de cuerdas metálicas desvíe la lectura hacia arriba) o sobre el 2º armónico cuando la fundamental es casi inexistente en micrófonos pequeños.
-3. **Estabilización sin arrastre (`src/core/dsp/smoother.ts`):**
-   * Un **filtro de mediana de 5 muestras** en escala logarítmica descarta por completo el ruido transitorio del golpe inicial de la púa o los dedos.
-   * Un suavizador adaptativo ponderado por `claridad²` estabiliza las centésimas de cent al sostener una nota y acelera la respuesta automáticamente al girar la clavija.
+1. **Pre-filtrado Pasa-Banda Butterworth (`24 Hz – 1800 Hz`):**
+   * Dos filtros *Biquad* de 2º orden en cascada eliminan golpes graves sub-audibles (mesa/viento) y ruido agudo (soplido/ventiladores/trastes) antes de analizar el período.
+2. **`Float64` FFT-MPM (`McLeod Pitch Method` acelerado por Wiener–Khinchin):**
+   * Elimina el *offset* DC y aplica una puerta de ruido **RMS** (`minRms = 0.010`) con claridad mínima (`minClarity = 0.78`).
+   * Calcula la autocorrelación lineal exacta en $O(N \log N)$ usando una **FFT Radix-2 propia de `16384` puntos** (`src/core/dsp/fft.ts`) combinada con la recurrencia exacta de energía de McLeod & Wyvill para obtener la **NSDF (*Normalized Square Difference Function*)**. Al basarse solo en la energía periódica, es inmune a ecos y desfases acústicos de sala.
+   * Extrae el primer *key maximum* que alcanza el `90%` del pico global, identificando la fundamental real incluso cuando los armónicos 2º y 3º dominan en micrófonos pequeños.
+3. **Refinamiento Espectral de Log-Magnitud QIFFT con Ventana Blackman–Harris de 4 términos:**
+   * Opera únicamente sobre la magnitud `|X(ω)|` de las `8192` muestras completas (sin derivadas de fase sensibles a ecos de sala) mediante interpolación cuadrática de 0.25 bin alrededor de la fundamental —o del 2º armónico cuando la fundamental es muy débil—, logrando rechazo lateral **> 92 dB** y precisión **`< 0.02 cents`** sin sesgo parabólico.
+4. **Estabilizador y Bloqueo Tipo Pedal (`src/core/dsp/smoother.ts` y `src/core/music/notes.ts`):**
+   * **Supresión de ataque (*attack blanking*):** ignora transitorios bruscos al golpear con la púa (`~45 ms`).
+   * **Media recortada intercuartil de 12 cuadros (`~255 ms`):** ordena las últimas lecturas, descarta el 25% superior e inferior de batidos acústicos y promedia el núcleo central, seguido de un EMA de doble velocidad (`0.085` en reposo para clavar la aguja, `0.30` al girar la clavija).
+   * **Histéresis *Schmitt trigger*:** sostiene el nombre de la nota hasta `±56 cents` entre semitonos y el estado `✓ AFINADO` entre `±2.5 cents` (entrada) y `±4.0 cents` (salida).
 
 ---
 
 ## 3. Cómo leer la pantalla del pedal
 
-* **Visor Estroboscópico Superior:** las bandas luminosas se desplazan hacia la **izquierda** cuando la nota está baja (*flat*), hacia la **derecha** cuando está alta (*sharp*), y **se detienen por completo** cuando el error tiende a **`0.00 cents`**. Es la referencia más fina para calibrar quintaje/octavación o afinar al límite físico del instrumento.
-* **Arco LED y Flechas Centrales (`▶` / `◀`):** cubre de `-50` a `+50 cents`. Ambas flechas y el LED central se encienden en **verde esmeralda** únicamente dentro de **`±1.0 cent`**.
+* **Visor Estroboscópico Superior:** las bandas luminosas se desplazan hacia la **izquierda** cuando la nota está baja (*flat*), hacia la **derecha** cuando está alta (*sharp*), y **se detienen por completo** dentro de **`±0.35 cents`**. Es la referencia más fina para calibrar quintaje/octavación.
+* **Arco LED, Aguja Amortiguada y Flechas (`▶` / `◀`):** cubre de `-50` a `+50 cents`. Las flechas, el LED central y el badge **`✓ AFINADO`** se iluminan en **verde esmeralda** al entrar en **`±2.5 cents`** (manteniéndose estables hasta `±4.0 cents`).
 * **Ajuste `PITCH / CALIBRACIÓN` (`A4`):** cambiar `A4` (por ejemplo a **`430 Hz`**) recalcula instantáneamente las frecuencias objetivo de las 12 notas en todas las octavas (`f = A4 · 2^((midi - 69) / 12)`).
 
 ---

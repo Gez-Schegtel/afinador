@@ -4,14 +4,23 @@ export const DEFAULT_A4_HZ = 440;
 export const QUICK_A4_PRESETS = [430, 432, 440, 442, 444] as const;
 
 /**
- * Tolerancia estricta de centro exacto estilo pedal profesional (±1.0 cent).
+ * Ventana de entrada al estado AFINADO (±2.5 cents, estándar en pedales Boss TU-3 / Korg).
  */
-export const IN_TUNE_TOLERANCE_CENTS = 1.0;
+export const IN_TUNE_TOLERANCE_CENTS = 2.5;
 
 /**
- * Zona cercana (±5.0 cents) útil para guía visual progresiva al aproximarse al centro.
+ * Histéresis de salida (Schmitt trigger): una vez que engancha AFINADO en ±2.5 cents,
+ * se mantiene clavado en verde mientras no se desvíe más allá de ±4.0 cents.
  */
-export const NEAR_TUNE_TOLERANCE_CENTS = 5.0;
+export const IN_TUNE_EXIT_HYSTERESIS_CENTS = 4.0;
+
+/**
+ * Histéresis para cambio de nota cromática (±56 cents) para evitar que el nombre de la nota
+ * parpadee cuando una cuerda está justo a mitad de camino entre dos semitonos.
+ */
+export const NOTE_SWITCH_HYSTERESIS_SEMITONES = 0.56;
+
+export const NEAR_TUNE_TOLERANCE_CENTS = 6.0;
 
 interface ChromaticPitchClass {
   letter: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
@@ -56,6 +65,11 @@ export interface ChromaticMatch {
   direction: TuningDirection;
   isNearCenter: boolean;
   note: NoteDescriptor;
+}
+
+export interface HysteresisContext {
+  previousMidi: number | null;
+  previousDirection: TuningDirection | null;
 }
 
 export function clampA4(hz: number): number {
@@ -104,26 +118,44 @@ export function describeMidiNote(
 }
 
 /**
- * Resuelve de forma puramente cromática (estilo pedal) la nota más cercana
- * y la desviación exacta en cents a partir de la referencia A4 configurada.
+ * Resuelve la nota cromática aplicando histéresis de pedal (Schmitt trigger) tanto en
+ * la frontera entre semitonos como en el bloqueo de estado AFINADO.
  */
 export function resolveChromaticNote(
   detectedHz: number,
-  a4Hz: number = DEFAULT_A4_HZ
+  a4Hz: number = DEFAULT_A4_HZ,
+  hysteresis?: HysteresisContext
 ): ChromaticMatch {
   const calibratedA4 = clampA4(a4Hz);
   const midiFloat = frequencyToMidiFloat(detectedHz, calibratedA4);
-  const nearestMidi = Math.round(midiFloat);
-  const note = describeMidiNote(nearestMidi, calibratedA4);
 
+  let targetMidi = Math.round(midiFloat);
+  if (
+    hysteresis?.previousMidi !== null &&
+    hysteresis?.previousMidi !== undefined &&
+    Math.abs(midiFloat - hysteresis.previousMidi) <=
+      NOTE_SWITCH_HYSTERESIS_SEMITONES
+  ) {
+    targetMidi = hysteresis.previousMidi;
+  }
+
+  const note = describeMidiNote(targetMidi, calibratedA4);
   const cents = centsBetween(detectedHz, note.frequency);
   const clampedCents = Math.max(-50, Math.min(50, cents));
   const absCents = Math.abs(cents);
 
+  const wasSameNoteInTune =
+    hysteresis?.previousMidi === targetMidi &&
+    hysteresis?.previousDirection === 'in-tune';
+
+  const activeTolerance = wasSameNoteInTune
+    ? IN_TUNE_EXIT_HYSTERESIS_CENTS
+    : IN_TUNE_TOLERANCE_CENTS;
+
   let direction: TuningDirection = 'in-tune';
-  if (cents < -IN_TUNE_TOLERANCE_CENTS) {
+  if (cents < -activeTolerance) {
     direction = 'flat';
-  } else if (cents > IN_TUNE_TOLERANCE_CENTS) {
+  } else if (cents > activeTolerance) {
     direction = 'sharp';
   }
 

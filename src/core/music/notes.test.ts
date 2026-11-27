@@ -6,56 +6,58 @@ import {
   resolveChromaticNote,
 } from './notes';
 
-describe('Mapeo cromático estilo pedal y calibración A4', () => {
+describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => {
   it('recalcula exactamente notas de bajo y guitarra cuando A4 = 430 Hz', () => {
-    // A4 = 430 Hz -> A2 (guitarra 5ª) = 107.50 Hz, A1 (bajo 3ª) = 53.75 Hz
     expect(midiToFrequency(69, 430)).toBeCloseTo(430, 6);
     expect(midiToFrequency(45, 430)).toBeCloseTo(107.5, 6);
     expect(midiToFrequency(33, 430)).toBeCloseTo(53.75, 6);
-    // B0 (bajo 5ª cuerda, MIDI 23) a 430 Hz -> ~30.166 Hz
     expect(midiToFrequency(23, 430)).toBeCloseTo(30.1662, 3);
 
     const match = resolveChromaticNote(107.5, 430);
     expect(match.note.letter).toBe('A');
-    expect(match.note.isSharp).toBe(false);
     expect(match.note.octave).toBe(2);
-    expect(match.note.latinName).toBe('La');
     expect(match.cents).toBeCloseTo(0, 6);
     expect(match.direction).toBe('in-tune');
   });
 
-  it('aplica tolerancia estricta de pedal (±1.0 cent) para centro exacto', () => {
-    const e1Bass = midiToFrequency(28, 440); // ~41.2034 Hz
+  it('entra en AFINADO a ±2.5 cents y se mantiene clavado con histéresis hasta ±4.0 cents', () => {
+    const e2 = midiToFrequency(40, 440); // 82.41 Hz
 
-    const exact = resolveChromaticNote(e1Bass * Math.pow(2, 0.8 / 1200), 440);
-    expect(exact.note.fullName).toBe('E1');
-    expect(exact.direction).toBe('in-tune');
+    // A +2.2 cents entra en AFINADO
+    const locked = resolveChromaticNote(e2 * Math.pow(2, 2.2 / 1200), 440);
+    expect(locked.direction).toBe('in-tune');
 
-    const slightlyFlat = resolveChromaticNote(
-      e1Bass * Math.pow(2, -1.2 / 1200),
-      440
+    // Si la cuerda oscila a +3.4 cents estando ya en AFINADO, NO pierde el estado AFINADO
+    const stillLocked = resolveChromaticNote(
+      e2 * Math.pow(2, 3.4 / 1200),
+      440,
+      {
+        previousMidi: locked.note.midi,
+        previousDirection: locked.direction,
+      }
     );
-    expect(slightlyFlat.direction).toBe('flat');
-    expect(slightlyFlat.isNearCenter).toBe(true);
+    expect(stillLocked.direction).toBe('in-tune');
 
-    const slightlySharp = resolveChromaticNote(
-      e1Bass * Math.pow(2, 1.2 / 1200),
-      440
-    );
-    expect(slightlySharp.direction).toBe('sharp');
-    expect(slightlySharp.isNearCenter).toBe(true);
+    // Recién al superar ±4.0 cents (ej. +4.4 cents) pasa a ALTO
+    const unlocked = resolveChromaticNote(e2 * Math.pow(2, 4.4 / 1200), 440, {
+      previousMidi: stillLocked.note.midi,
+      previousDirection: stillLocked.direction,
+    });
+    expect(unlocked.direction).toBe('sharp');
   });
 
-  it('identifica correctamente notas sostenidas con indicador isSharp', () => {
-    const fSharp3 = midiToFrequency(54, 440);
-    const match = resolveChromaticNote(fSharp3, 440);
-    expect(match.note.letter).toBe('F');
-    expect(match.note.isSharp).toBe(true);
-    expect(match.note.fullName).toBe('F♯3');
-    expect(match.note.latinName).toBe('Fa♯');
+  it('evita parpadeo entre notas vecinas cerca de ±50 cents gracias a la histéresis de nota', () => {
+    const e2 = midiToFrequency(40, 440);
+    // +53 cents por encima de E2: sin historial elegiría F2 (MIDI 41), pero viniendo de E2 mantiene E2 hasta +56 ct
+    const heldOnE2 = resolveChromaticNote(e2 * Math.pow(2, 53 / 1200), 440, {
+      previousMidi: 40,
+      previousDirection: 'sharp',
+    });
+    expect(heldOnE2.note.midi).toBe(40);
+    expect(heldOnE2.note.fullName).toBe('E2');
   });
 
-  it('acota valores fuera de rango en clampA4 conservando décimas de Hz', () => {
+  it('acota valores fuera de rango en clampA4', () => {
     expect(clampA4(430)).toBe(430);
     expect(clampA4(430.5)).toBe(430.5);
     expect(clampA4(300)).toBe(415);

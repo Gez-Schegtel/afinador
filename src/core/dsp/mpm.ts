@@ -1,30 +1,28 @@
 /**
- * Motor DSP Híbrido de Precisión Estroboscópica (Float64) para Guitarra y Bajo:
+ * Motor DSP de Alta Precisión e Inmunidad Acústica (Float64) para Guitarra y Bajo:
  *
- * Etapa 1 — FFT-MPM (McLeod Pitch Method acelerado por FFT en 64 bits sobre 8192 muestras):
- *   Calcula la NSDF exacta combinando autocorrelación lineal Wiener–Khinchin O(N log N)
- *   con la recurrencia exacta de energía de McLeod & Wyvill. Identifica inequívocamente
- *   el período fundamental desde 27.5 Hz (A0 / bajo de 5 cuerdas B0 = 30.87 Hz) hasta
- *   2000 Hz sin saltos de octava, incluso con fundamental débil o casi ausente.
+ * 1. FFT-MPM (McLeod Pitch Method acelerado por FFT en 64 bits sobre 8192 muestras):
+ *    Calcula la NSDF exacta mediante Wiener–Khinchin O(N log N) + recurrencia exacta de
+ *    energía. Identifica inequívocamente el período fundamental desde 27.5 Hz (A0 / bajo
+ *    de 5 cuerdas B0 = 30.87 Hz) hasta 2000 Hz sin saltos de octava.
  *
- * Etapa 2 — Refinamiento por Diferencia de Fase Blackman-DTFT (Phase Vocoder bloqueado a f0):
- *   Evalúa la fase instantánea sobre dos sub-ventanas Blackman solapadas dentro del mismo
- *   bloque (aislando el armónico con > 58–75 dB de rechazo lateral). Elimina el sesgo de
- *   interpolación parabólica y alcanza precisión < 0.02 cents en todo el espectro.
+ * 2. Refinamiento Espectral de Log-Magnitud QIFFT con Ventana Blackman–Harris de 4 términos:
+ *    Opera únicamente sobre la magnitud |X(ω)| de las 8192 muestras completas (sin derivadas
+ *    de fase sensibles a ecos de sala), logrando rechazo lateral > 92 dB y precisión < 0.02 cents.
  */
 
 import { FFT64 } from './fft';
 
 export interface MPMOptions {
-  /** Umbral mínimo de energía RMS para puerta de ruido (default: 0.006) */
+  /** Umbral mínimo de energía RMS para puerta de ruido (default: 0.010) */
   minRms?: number;
   /** Fracción del pico NSDF máximo requerida para elegir el primer armónico (default: 0.90) */
   clarityThreshold?: number;
-  /** Claridad absoluta mínima aceptable en [0, 1] (default: 0.65) */
+  /** Claridad periódica mínima aceptable en [0, 1] (default: 0.78) */
   minClarity?: number;
   /** Frecuencia mínima detectable en Hz (default: 27.5 Hz — cubre A0 y B0 de bajo 5 cuerdas) */
   minFreq?: number;
-  /** Frecuencia máxima detectable en Hz (default: 2000 Hz — cubre armónicos y trastes altos) */
+  /** Frecuencia máxima detectable en Hz (default: 2000 Hz) */
   maxFreq?: number;
 }
 
@@ -35,9 +33,9 @@ export interface PitchResult {
 }
 
 const DEFAULT_OPTIONS: Required<MPMOptions> = {
-  minRms: 0.006,
+  minRms: 0.01,
   clarityThreshold: 0.9,
-  minClarity: 0.65,
+  minClarity: 0.78,
   minFreq: 27.5,
   maxFreq: 2000,
 };
@@ -46,20 +44,6 @@ function nextPow2(v: number): number {
   let p = 1;
   while (p < v) p <<= 1;
   return p;
-}
-
-function wrapPhase(rad: number): number {
-  const twoPi = 2 * Math.PI;
-  let w = rad - twoPi * Math.floor((rad + Math.PI) / twoPi);
-  if (w <= -Math.PI) w += twoPi;
-  if (w > Math.PI) w -= twoPi;
-  return w;
-}
-
-interface SubWindowProjection {
-  phase1: number;
-  phase2: number;
-  amplitude: number;
 }
 
 export class MPMDetector {
@@ -71,12 +55,7 @@ export class MPMDetector {
   private readonly nsdf: Float64Array;
   private readonly peakTaus: Int32Array;
   private readonly peakValues: Float64Array;
-
-  // Sub-ventana Blackman precalculada para el refinamiento de fase (Etapa 2)
-  private readonly phaseWinLen: number;
-  private readonly phaseHop: number;
-  private readonly phaseWindow: Float64Array;
-  private readonly phaseWindowSum: number;
+  private readonly bhWindow: Float64Array;
 
   constructor(bufferSize: number = 8192) {
     this.bufferSize = bufferSize;
@@ -90,26 +69,16 @@ export class MPMDetector {
     this.peakTaus = new Int32Array(bufferSize >>> 1);
     this.peakValues = new Float64Array(bufferSize >>> 1);
 
-    // 87.5% de longitud para sub-ventana (7168) y 12.5% de desplazamiento (1024 para N=8192):
-    // garantiza > 4.1 bins incluso a 27.5 Hz (48 kHz y 44.1 kHz), poniendo -f0 y 2f0 fuera del lóbulo principal.
-    this.phaseWinLen = Math.floor(bufferSize * 0.875);
-    this.phaseHop = bufferSize - this.phaseWinLen;
-    this.phaseWindow = new Float64Array(this.phaseWinLen);
-
-    let winSum = 0;
-    const denom = this.phaseWinLen - 1;
-    for (let i = 0; i < this.phaseWinLen; i++) {
-      const ratio = denom > 0 ? i / denom : 0;
-      // Ventana Blackman–Harris mínima de 4 términos: rechazo lateral > 92 dB a partir de 4 bins
-      const w =
+    this.bhWindow = new Float64Array(bufferSize);
+    const denom = bufferSize - 1;
+    for (let i = 0; i < bufferSize; i++) {
+      const r = denom > 0 ? i / denom : 0;
+      this.bhWindow[i] =
         0.35875 -
-        0.48829 * Math.cos(2 * Math.PI * ratio) +
-        0.14128 * Math.cos(4 * Math.PI * ratio) -
-        0.01168 * Math.cos(6 * Math.PI * ratio);
-      this.phaseWindow[i] = w;
-      winSum += w;
+        0.48829 * Math.cos(2 * Math.PI * r) +
+        0.14128 * Math.cos(4 * Math.PI * r) -
+        0.01168 * Math.cos(6 * Math.PI * r);
     }
-    this.phaseWindowSum = winSum > 0 ? winSum : 1;
   }
 
   public detect(
@@ -180,7 +149,7 @@ export class MPMDetector {
     const nsdf = this.nsdf;
     nsdf[0] = 1;
     let mTau = 2 * sumSq;
-    const limitTau = Math.min(n - 1, maxTau + 1);
+    const limitTau = Math.min(n - 1, maxTau + 2);
 
     for (let tau = 1; tau <= limitTau; tau++) {
       const left = centered[n - tau]!;
@@ -257,7 +226,7 @@ export class MPMDetector {
       return { frequency: null, clarity: 0, rms };
     }
 
-    // 6. Interpolación parabólica en 64 bits para estimación inicial de f0
+    // 6. Interpolación parabólica de 3 puntos para estimación inicial de f0 y claridad
     const y1 = nsdf[chosenTau - 1]!;
     const y2 = chosenVal;
     const y3 = nsdf[chosenTau + 1]!;
@@ -270,7 +239,10 @@ export class MPMDetector {
       const delta = (y3 - y1) / denom;
       if (delta > -1 && delta < 1) {
         refinedTau = chosenTau + delta;
-        refinedClarity = Math.min(1, Math.max(0, y2 + 0.25 * (y3 - y1) * delta));
+        refinedClarity = Math.min(
+          1,
+          Math.max(0, y2 + 0.25 * (y3 - y1) * delta)
+        );
       }
     }
 
@@ -283,129 +255,93 @@ export class MPMDetector {
       return { frequency: null, clarity: refinedClarity, rms };
     }
 
-    // 7. Etapa 2: Refinamiento estroboscópico por diferencia de fase Blackman-DTFT
-    const exactFrequency =
+    // 7. Refinamiento espectral QIFFT de log-magnitud sobre ventana Blackman–Harris completa
+    const frequency =
       n === this.bufferSize
-        ? this.refineByPhaseVocoder(mpmFrequency, sampleRate, rms)
+        ? this.refineBySpectralMagnitude(mpmFrequency, sampleRate)
         : mpmFrequency;
 
     return {
-      frequency: exactFrequency,
+      frequency,
       clarity: refinedClarity,
       rms,
     };
   }
 
-  private projectSubWindows(omega: number): SubWindowProjection {
-    const len = this.phaseWinLen;
-    const hop = this.phaseHop;
+  private logMagnitudeAt(omega: number): number {
+    const n = this.bufferSize;
     const x = this.centered;
-    const w = this.phaseWindow;
+    const win = this.bhWindow;
 
-    // Recurrencia trigonométrica exacta en Float64 con re-anclaje periódico cada 256 muestras
     const stepCos = Math.cos(omega);
     const stepSin = Math.sin(omega);
+    let c = 1;
+    let s = 0;
+    let re = 0;
+    let im = 0;
 
-    let cosCur = 1;
-    let sinCur = 0;
-
-    let re1 = 0;
-    let im1 = 0;
-    let re2 = 0;
-    let im2 = 0;
-
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < n; i++) {
       if ((i & 255) === 0 && i > 0) {
         const ang = omega * i;
-        cosCur = Math.cos(ang);
-        sinCur = Math.sin(ang);
+        c = Math.cos(ang);
+        s = Math.sin(ang);
       }
+      const v = x[i]! * win[i]!;
+      re += v * c;
+      im -= v * s;
 
-      const wi = w[i]!;
-      const x1 = x[i]! * wi;
-      const x2 = x[i + hop]! * wi;
-
-      re1 += x1 * cosCur;
-      im1 -= x1 * sinCur;
-      re2 += x2 * cosCur;
-      im2 -= x2 * sinCur;
-
-      const nextCos = cosCur * stepCos - sinCur * stepSin;
-      sinCur = sinCur * stepCos + cosCur * stepSin;
-      cosCur = nextCos;
+      const nextCos = c * stepCos - s * stepSin;
+      s = s * stepCos + c * stepSin;
+      c = nextCos;
     }
 
-    const mag1 = Math.hypot(re1, im1);
-    const mag2 = Math.hypot(re2, im2);
-    // Para una onda real A*cos(wt), la magnitud unilateral es A * windowSum / 2
-    const amplitude = (mag1 + mag2) / this.phaseWindowSum;
-
-    return {
-      phase1: Math.atan2(im1, re1),
-      phase2: Math.atan2(im2, re2),
-      amplitude,
-    };
+    return 0.5 * Math.log(re * re + im * im + 1e-30);
   }
 
-  private refineByPhaseVocoder(
-    f0Estimate: number,
-    sampleRate: number,
-    rms: number
+  private parabolicQifft(
+    fCenter: number,
+    centerLogMag: number,
+    sampleRate: number
   ): number {
-    const hop = this.phaseHop;
-    // Asegurar que la frecuencia supere el lóbulo principal de 4 bins de Blackman–Harris (-92 dB)
-    const minSeparatedHz = (4.0 * sampleRate) / this.phaseWinLen;
+    const w0 = (2 * Math.PI * fCenter) / sampleRate;
+    const dw = (0.5 * Math.PI) / this.bufferSize; // 0.25 bin DFT
+    const y1 = this.logMagnitudeAt(w0 - dw);
+    const y2 = centerLogMag;
+    const y3 = this.logMagnitudeAt(w0 + dw);
 
-    const omega1 = (2 * Math.PI * f0Estimate) / sampleRate;
-    const p1 =
-      f0Estimate >= minSeparatedHz ? this.projectSubWindows(omega1) : null;
+    const denom = 2 * (2 * y2 - y1 - y3);
+    if (denom <= 1e-12) {
+      return fCenter;
+    }
 
-    // Evaluar también el 2º armónico por si el micrófono del móvil atenúa subgraves (< 70 Hz)
-    const canCheckH2 = 2 * f0Estimate < sampleRate * 0.45;
-    const p2 = canCheckH2
-      ? this.projectSubWindows((4 * Math.PI * f0Estimate) / sampleRate)
-      : null;
+    const delta = Math.max(-2, Math.min(2, (y3 - y1) / denom));
+    const refined = ((w0 + delta * dw) * sampleRate) / (2 * Math.PI);
 
-    let chosenHarmonic = 0;
-    let chosenProj: SubWindowProjection | null = null;
-
-    const amp1 = p1?.amplitude ?? 0;
-    const amp2 = p2?.amplitude ?? 0;
-
-    if (p1 && amp1 >= 0.25 * amp2 && amp1 >= 0.12 * rms) {
-      // Fundamental limpio presente: refinar directamente sobre k = 1 (inmune a inarmonicidad)
-      chosenHarmonic = 1;
-      chosenProj = p1;
-    } else if (
-      p2 &&
-      2 * f0Estimate >= minSeparatedHz &&
-      amp2 >= 0.15 * rms
+    if (
+      !Number.isFinite(refined) ||
+      Math.abs(1200 * Math.log2(refined / fCenter)) > 10
     ) {
-      // Fundamental muy débil o por debajo de 23 Hz (ej. B0 en mic de celular): refinar con k = 2
-      chosenHarmonic = 2;
-      chosenProj = p2;
+      return fCenter;
     }
 
-    if (!chosenProj || chosenHarmonic === 0) {
-      return f0Estimate;
+    return refined;
+  }
+
+  private refineBySpectralMagnitude(
+    f0Estimate: number,
+    sampleRate: number
+  ): number {
+    const lm1 = this.logMagnitudeAt((2 * Math.PI * f0Estimate) / sampleRate);
+
+    if (2 * f0Estimate < sampleRate * 0.45) {
+      const lm2 = this.logMagnitudeAt((4 * Math.PI * f0Estimate) / sampleRate);
+      // Si la fundamental está muy atenuada (< 40% del 2º armónico), refinar sobre 2*f0 y dividir por 2
+      if (lm2 - lm1 > Math.log(2.5)) {
+        return this.parabolicQifft(2 * f0Estimate, lm2, sampleRate) / 2;
+      }
     }
 
-    const omegaK = (2 * Math.PI * chosenHarmonic * f0Estimate) / sampleRate;
-    const measuredAdvance = chosenProj.phase2 - chosenProj.phase1;
-    const expectedAdvance = omegaK * hop;
-    const deltaPhase = wrapPhase(measuredAdvance - expectedAdvance);
-
-    const refinedF0 =
-      f0Estimate +
-      (deltaPhase * sampleRate) / (2 * Math.PI * chosenHarmonic * hop);
-
-    // Ventana de seguridad de ±12 cents respecto al período MPM inequívoco
-    const deviationCents = Math.abs(1200 * Math.log2(refinedF0 / f0Estimate));
-    if (!Number.isFinite(refinedF0) || deviationCents > 12) {
-      return f0Estimate;
-    }
-
-    return refinedF0;
+    return this.parabolicQifft(f0Estimate, lm1, sampleRate);
   }
 }
 
