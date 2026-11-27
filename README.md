@@ -106,20 +106,23 @@ El repositorio incluye el flujo [`.github/workflows/deploy-pages.yml`](./.github
 2. Cada `push` a `main` ejecuta la suite completa de tests de precisión, compila la PWA ajustando automáticamente `VITE_BASE_PATH=/afinador/` y la publica con **HTTPS** en **[https://gez-schegtel.github.io/afinador/](https://gez-schegtel.github.io/afinador/)**.
 3. Desde Android, abrí esa URL en Chrome/Firefox/Brave y seleccioná **«Instalar aplicación»** para tenerla con ícono propio y uso **100% sin conexión**.
 
-### B. Empaquetado Nativo `.apk` (F-Droid y GitHub Releases)
-El repositorio incluye `capacitor.config.json` listo para generar paquetes nativos libres (sin SDKs propietarios ni rastreadores, cumpliendo los criterios de **F-Droid**) una vez instalados un JDK (`openjdk`) y las *Android SDK Command-Line Tools*:
+### B. Compilación Automática del `.apk` Libre en CI/CD (GitHub Actions + F-Droid)
+El proyecto incluye la capa nativa `android/` (libre del plugin propietario `google-services` y sin bloques cifrados `dependenciesInfo`, cumpliendo los requisitos de **F-Droid**) junto con el pipeline [`.github/workflows/build-apk.yml`](./.github/workflows/build-apk.yml):
 
-```bash
-npm install @capacitor/core @capacitor/android
-npm install -D @capacitor/cli
-npm run build
-npx cap add android
-npx cap sync android
-```
-
-Asegurate de incluir `<uses-permission android:name="android.permission.RECORD_AUDIO" />` en `android/app/src/main/AndroidManifest.xml` y compilá el `.apk` desde `android/`:
-
-* **`.apk` de lanzamiento (F-Droid / GitHub Releases):** `./gradlew assembleRelease`
+* **En cada `push` a `main` (o manualmente desde Actions):** GitHub Actions ejecuta los tests de precisión, sincroniza Capacitor y compila un `.apk` instalable (disponible como artefacto descargable `afinador-apk` dentro de la pestaña **Actions** junto con su hash `.sha256`).
+* **Publicación automática en GitHub Releases:** al crear y subir una etiqueta de versión:
+  ```bash
+  git tag v0.1.0
+  git push origin v0.1.0
+  ```
+  el workflow compila el `.apk` y crea automáticamente el *Release* público en GitHub adjuntando `afinador-v0.1.0.apk` y `afinador-v0.1.0.apk.sha256`.
+* **Firma criptográfica propia (recomendada para versiones definitivas):**
+  Si configurás los *Secrets* del repositorio (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), el CI firmará automáticamente el `.apk` con tu llave privada; si aún no están definidos, utiliza una firma de respaldo instalable para que puedas probar el `.apk` de inmediato.
+  Para generar tu propio keystore una sola vez en Linux:
+  ```bash
+  keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias afinador
+  base64 -w 0 release.jks   # Copiar salida en Secret ANDROID_KEYSTORE_BASE64
+  ```
 
 ---
 

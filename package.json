@@ -15,13 +15,17 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest",
+    "cap:sync": "npm run build && npx cap sync android",
     "android:usb": "adb reverse tcp:5173 tcp:5173 && echo 'Puerto 5173 reenviado por USB. Abrí http://localhost:5173 en el navegador de tu Android.'"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/core": "^8.6.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.3",
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.7.0",
