@@ -1,8 +1,10 @@
 # Afinador — Guitarra y Bajo
 
+👉 **[Abrir e instalar la aplicación web (PWA): https://gez-schegtel.github.io/afinador/](https://gez-schegtel.github.io/afinador/)**
+
 Afinador cromático estilo pedal de escenario con **precisión estroboscópica (`< 0.05 cents`)** para **guitarra** y **bajo**, desarrollado como **Software Libre (`GNU GPL v3`)**.
 
-Funciona como aplicación web progresiva (**PWA**) instalable **100% sin internet** en Android y escritorio, procesando todo el audio localmente en el dispositivo (cero servidores externos, cero telemetría). Se despliega automáticamente en **GitHub Pages** (`https://gez-schegtel.github.io/afinador/`) y cuenta con estructura preparada para distribuirse como paquete libre `.apk` en **GitHub Releases** y **F-Droid** mediante **Capacitor**.
+Funciona como aplicación web progresiva (**PWA**) instalable **100% sin internet** en Android y escritorio, procesando todo el audio localmente en el dispositivo (cero servidores externos, cero telemetría). Se despliega automáticamente en **[GitHub Pages](https://gez-schegtel.github.io/afinador/)** y cuenta con estructura preparada para distribuirse como paquete libre `.apk` en **GitHub Releases** y **F-Droid** mediante **Capacitor**.
 
 ---
 
@@ -101,7 +103,7 @@ Para instalarla **sin conexión** en Android: abrí la app en Chrome (`localhost
 ### A. Publicación Web PWA en GitHub Pages (automática)
 El repositorio incluye el flujo [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml):
 1. En GitHub, abrí **Settings → Pages** y en **Build and deployment → Source** seleccioná **GitHub Actions**.
-2. Cada `push` a `main` ejecuta la suite completa de tests de precisión, compila la PWA ajustando automáticamente `VITE_BASE_PATH=/afinador/` y la publica con **HTTPS** en **`https://gez-schegtel.github.io/afinador/`**.
+2. Cada `push` a `main` ejecuta la suite completa de tests de precisión, compila la PWA ajustando automáticamente `VITE_BASE_PATH=/afinador/` y la publica con **HTTPS** en **[https://gez-schegtel.github.io/afinador/](https://gez-schegtel.github.io/afinador/)**.
 3. Desde Android, abrí esa URL en Chrome/Firefox/Brave y seleccioná **«Instalar aplicación»** para tenerla con ícono propio y uso **100% sin conexión**.
 
 ### B. Empaquetado Nativo `.apk` (F-Droid y GitHub Releases)
