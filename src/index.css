@@ -673,51 +673,101 @@ select {
   border-color: var(--led-cyan);
 }
 
-.quick-strings-group {
+.tuning-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 8px;
+}
+
+.tuning-summary {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 10px;
+  padding: 7px 10px;
 }
 
-.quick-strings-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.tuning-notes {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
 }
 
-.quick-group-tag {
-  width: 52px;
-  flex-shrink: 0;
+.tuning-description {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--led-cyan);
+}
+
+.tuning-changes {
   font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuning-warning {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 2px 7px;
+  border-radius: 7px;
+}
+
+.tuning-warning.is-info {
+  color: var(--led-cyan);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.string-btns {
+  display: grid;
+  grid-template-columns: repeat(var(--string-cols-mobile, 6), minmax(0, 1fr));
+  gap: 5px;
+}
+
+.string-btn {
+  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 9px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-screen);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding: 3px 2px;
+  cursor: pointer;
+}
+
+.string-btn-num {
+  font-size: 0.62rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
-.quick-string-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  flex: 1;
+.string-btn-note {
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
-.quick-string-btn {
-  flex: 1 1 auto;
-  min-height: 28px;
-  border-radius: 7px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-screen);
-  color: var(--text-secondary);
-  font-size: 0.69rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  padding: 2px 5px;
-  cursor: pointer;
-}
-
-.quick-string-btn.is-active {
+.string-btn.is-active {
   border-color: var(--led-cyan);
   background: rgba(56, 189, 248, 0.15);
   color: var(--text-primary);
+}
+
+.string-btn.is-active .string-btn-num {
+  color: var(--led-cyan);
 }
 
 /* Footswitch del pedal */
@@ -833,5 +883,9 @@ select {
 
   .pedal-footswitch-area {
     margin-top: auto;
+  }
+
+  .string-btns {
+    grid-template-columns: repeat(var(--string-cols, 6), minmax(0, 1fr));
   }
 }

@@ -32,11 +32,21 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - Workflow de CI [`.github/workflows/tests.yml`](./.github/workflows/tests.yml) (chequeo de tipos + Vitest en cada `push`/PR) e insignias de estado en el `README.md`.
 - Adopción formal de flujo por especificaciones (`docs/specs/`) y reglas de desarrollo para agentes (`GEMINI.md` / `CLAUDE.md`).
 
+### Fase 5 — Catálogo de Afinaciones (`Spec 002`)
+- Catálogo de **34 afinaciones** para **guitarra de 6, 7 y 8 cuerdas** y **bajo de 4, 5 y 6 cuerdas** (estándar, bajadas, *Drop*, abiertas, DADGAD, BEAD, EADGC), con selector **Instrumento + Afinación**, un botón por cuerda y avisos de tensión ([`docs/specs/002-afinaciones.md`](./docs/specs/002-afinaciones.md)).
+- Nuevo modelo de notas con **ortografía enarmónica** (`src/core/music/spelling.ts`): el visor muestra `E♭2` en las afinaciones bajadas (indicador `♭`). Es la base de los specs de acordes.
+- Persistencia del modo Automático/Manual, del instrumento y de la afinación (corrige el hallazgo H-13 de la [auditoría](./docs/auditoría.md)).
+
 ---
 
 ## 📋 Próximos Hitos y Backlog
 
 - [ ] **Lanzamiento `v0.1.0` en GitHub Releases con firma propia:** generar `release.jks`, configurar los *Secrets* en GitHub y crear el tag `v0.1.0` para publicar el primer `.apk` oficial firmado.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
+- [ ] **Spec 007 — Identidad visual *Endurend Musical Gadgets***.
+- [ ] **Spec 006 — Navegación por secciones**.
+- [ ] **Spec 004 — Metrónomo**.
+- [ ] **Spec 003 — Diccionario de acordes**.
+- [ ] **Spec 005 — Identificador de acordes**.
 - [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
 - [ ] **Spec futuro — Monitor de Estabilidad Temporal (Octavación / Quintaje):** pequeño gráfico histórico de cents para verificar la caída de afinación del ataque al *sustain* al calibrar puentes y cejillas.

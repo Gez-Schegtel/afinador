@@ -386,9 +386,9 @@ export function TunerGauge({
                 </span>
                 <div className="pedal-accidental-col">
                   <span
-                    className={`pedal-sharp ${activeOrLockedNote.isSharp ? `is-lit ${displayMatch ? '' : 'is-waiting'}` : ''}`}
+                    className={`pedal-sharp ${activeOrLockedNote.accidental !== 0 ? `is-lit ${displayMatch ? '' : 'is-waiting'}` : ''}`}
                   >
-                    ♯
+                    {activeOrLockedNote.accidental < 0 ? '♭' : '♯'}
                   </span>
                   <span className="pedal-octave">
                     {activeOrLockedNote.octave}

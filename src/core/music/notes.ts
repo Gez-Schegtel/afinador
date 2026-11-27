@@ -1,3 +1,15 @@
+import {
+  defaultSharpSpelling,
+  formatPitchName,
+  formatSpelledNote,
+  latinPitchName,
+  mod12,
+  pitchClassOf,
+  spellMidi,
+  type Accidental,
+  type PitchName,
+} from './spelling';
+
 export const MIN_A4_HZ = 415;
 export const MAX_A4_HZ = 466;
 export const DEFAULT_A4_HZ = 440;
@@ -74,33 +86,13 @@ export const OCTAVE_OPTIONS: readonly OctaveOption[] = [
   { octave: 5, label: '5 — Sobreaguda' },
 ] as const;
 
-export interface QuickStringPreset {
-  label: string;
-  midi: number;
-}
-
-export const QUICK_GUITAR_STRINGS: readonly QuickStringPreset[] = [
-  { label: '6ª E2', midi: 40 },
-  { label: '5ª A2', midi: 45 },
-  { label: '4ª D3', midi: 50 },
-  { label: '3ª G3', midi: 55 },
-  { label: '2ª B3', midi: 59 },
-  { label: '1ª E4', midi: 64 },
-] as const;
-
-export const QUICK_BASS_STRINGS: readonly QuickStringPreset[] = [
-  { label: '5ª B0', midi: 23 },
-  { label: '4ª E1', midi: 28 },
-  { label: '3ª A1', midi: 33 },
-  { label: '2ª D2', midi: 38 },
-  { label: '1ª G2', midi: 43 },
-] as const;
-
 export type TuningDirection = 'flat' | 'in-tune' | 'sharp';
 
 export interface NoteDescriptor {
   midi: number;
   letter: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
+  /** Alteración escrita (−2..+2). En modo Automático siempre 0 o +1 (sostenidos). */
+  accidental: Accidental;
   isSharp: boolean;
   name: string;
   latinName: string;
@@ -191,23 +183,30 @@ export function centsBetween(detectedHz: number, targetHz: number): number {
   return 1200 * Math.log2(detectedHz / targetHz);
 }
 
+/**
+ * Describe una nota MIDI. Si se pasa `spelling` y su clase de altura coincide, se usa esa
+ * ortografía (p. ej. E♭2 en una afinación bajada); si no, se escriben sostenidos.
+ */
 export function describeMidiNote(
   midi: number,
-  a4Hz: number = DEFAULT_A4_HZ
+  a4Hz: number = DEFAULT_A4_HZ,
+  spelling: PitchName | null = null
 ): NoteDescriptor {
   const roundedMidi = Math.round(midi);
-  const noteIndex = ((roundedMidi % 12) + 12) % 12;
-  const octave = Math.floor(roundedMidi / 12) - 1;
-  const spec = CHROMATIC_SCALE[noteIndex]!;
+  const spelled =
+    spelling && pitchClassOf(spelling) === mod12(roundedMidi)
+      ? spellMidi(roundedMidi, spelling)
+      : defaultSharpSpelling(roundedMidi);
 
   return {
     midi: roundedMidi,
-    letter: spec.letter,
-    isSharp: spec.isSharp,
-    name: spec.displayName,
-    latinName: spec.latinName,
-    octave,
-    fullName: `${spec.displayName}${octave}`,
+    letter: spelled.letter,
+    accidental: spelled.accidental,
+    isSharp: spelled.accidental > 0,
+    name: formatPitchName(spelled),
+    latinName: latinPitchName(spelled),
+    octave: spelled.octave,
+    fullName: formatSpelledNote(spelled),
     frequency: midiToFrequency(roundedMidi, a4Hz),
   };
 }
@@ -258,13 +257,15 @@ export function buildTargetNoteGroups(
 
 /**
  * Resuelve la nota cromática aplicando histéresis de pedal (Schmitt trigger) en modo
- * Automático o evaluando directamente respecto a `forcedMidi` en modo Manual.
+ * Automático o evaluando directamente respecto a `forcedMidi` en modo Manual (con la
+ * ortografía opcional `forcedSpelling`, p. ej. la de la cuerda de una afinación).
  */
 export function resolveChromaticNote(
   detectedHz: number,
   a4Hz: number = DEFAULT_A4_HZ,
   hysteresis?: HysteresisContext,
-  forcedMidi: number | null = null
+  forcedMidi: number | null = null,
+  forcedSpelling: PitchName | null = null
 ): ChromaticMatch {
   const calibratedA4 = clampA4(a4Hz);
   const midiFloat = frequencyToMidiFloat(detectedHz, calibratedA4);
@@ -284,7 +285,11 @@ export function resolveChromaticNote(
     }
   }
 
-  const note = describeMidiNote(targetMidi, calibratedA4);
+  const note = describeMidiNote(
+    targetMidi,
+    calibratedA4,
+    forcedMidi !== null && forcedMidi !== undefined ? forcedSpelling : null
+  );
   const cents = centsBetween(detectedHz, note.frequency);
   const clampedCents = Math.max(-50, Math.min(50, cents));
   const absCents = Math.abs(cents);

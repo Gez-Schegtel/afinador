@@ -82,6 +82,32 @@ describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => 
     expect(manualMatch.direction).toBe('flat');
   });
 
+  it('usa la ortografía de la cuerda objetivo en modo Manual (E♭2 en vez de D♯2)', () => {
+    const eFlat2 = midiToFrequency(39, 440); // 77.78 Hz
+    const spelled = resolveChromaticNote(eFlat2, 440, undefined, 39, {
+      letter: 'E',
+      accidental: -1,
+    });
+    expect(spelled.note.fullName).toBe('E♭2');
+    expect(spelled.note.latinName).toBe('Mi♭');
+    expect(spelled.note.accidental).toBe(-1);
+    expect(spelled.note.isSharp).toBe(false);
+    expect(spelled.cents).toBeCloseTo(0, 6);
+
+    // Sin ortografía forzada (o en Automático) se mantienen los sostenidos.
+    expect(resolveChromaticNote(eFlat2, 440, undefined, 39).note.fullName).toBe('D♯2');
+    expect(
+      resolveChromaticNote(eFlat2, 440, undefined, null, {
+        letter: 'E',
+        accidental: -1,
+      }).note.fullName
+    ).toBe('D♯2');
+    // Una ortografía que no corresponde a la nota se ignora.
+    expect(
+      describeMidiNote(40, 440, { letter: 'E', accidental: -1 }).fullName
+    ).toBe('E2');
+  });
+
   it('convierte Nota + Octava con clamp seguro en octava 0 (A0 mínimo) y genera catálogo A0..B5 sin duplicados', () => {
     expect(midiFromNoteAndOctave(4, 2)).toBe(40); // E2
     expect(midiFromNoteAndOctave(11, 0)).toBe(23); // B0

@@ -10,12 +10,23 @@ import {
   type ChromaticMatch,
   type HysteresisContext,
 } from './core/music/notes';
+import { spelledToMidi, type PitchName } from './core/music/spelling';
+import {
+  resolveTuningSelection,
+  spellingForMidi,
+  tuningMidis,
+  type InstrumentId,
+  type TuningDefinition,
+} from './core/music/tunings';
 import { CalibrationControl } from './components/CalibrationControl';
 import { TargetNoteControl } from './components/TargetNoteControl';
 import { TunerGauge, type GaugeFrameData } from './components/TunerGauge';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
 const STORAGE_TARGET_MIDI_KEY = 'afinador_target_midi';
+const STORAGE_MANUAL_MODE_KEY = 'afinador_manual_mode';
+const STORAGE_INSTRUMENT_KEY = 'afinador_instrument';
+const STORAGE_TUNING_KEY = 'afinador_tuning_id';
 const UI_READOUT_INTERVAL_MS = 85; // ~12 Hz para lectura digital calma y legible
 
 function loadInitialA4(): number {
@@ -38,10 +49,54 @@ function loadInitialTargetMidi(): number {
   }
 }
 
+function loadInitialManualMode(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_MANUAL_MODE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function loadInitialTuning(): {
+  instrument: InstrumentId;
+  tuning: TuningDefinition;
+} {
+  try {
+    return resolveTuningSelection(
+      localStorage.getItem(STORAGE_INSTRUMENT_KEY),
+      localStorage.getItem(STORAGE_TUNING_KEY)
+    );
+  } catch {
+    return resolveTuningSelection(null, null);
+  }
+}
+
+function saveToStorage(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignorar si el almacenamiento está restringido
+  }
+}
+
+interface ManualConfig {
+  isManual: boolean;
+  targetMidi: number;
+  spelling: PitchName | null;
+}
+
 export function App() {
   const [a4Hz, setA4Hz] = useState<number>(loadInitialA4);
-  const [isManual, setIsManual] = useState<boolean>(false);
+  const [isManual, setIsManual] = useState<boolean>(loadInitialManualMode);
   const [targetMidi, setTargetMidi] = useState<number>(loadInitialTargetMidi);
+  const [tuningSelection, setTuningSelection] = useState(loadInitialTuning);
+  const tuning = tuningSelection.tuning;
+
+  // La nota objetivo se escribe con la ortografía de la afinación si es una de sus cuerdas.
+  const targetSpelling = useMemo(
+    () => (isManual ? spellingForMidi(tuning, targetMidi) : null),
+    [isManual, tuning, targetMidi]
+  );
 
   const [isListening, setIsListening] = useState(false);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
@@ -53,7 +108,11 @@ export function App() {
   const [inputLevel, setInputLevel] = useState(0);
 
   const a4Ref = useRef<number>(a4Hz);
-  const manualConfigRef = useRef({ isManual, targetMidi });
+  const manualConfigRef = useRef<ManualConfig>({
+    isManual,
+    targetMidi,
+    spelling: targetSpelling,
+  });
   const lastFrequencyRef = useRef<number | null>(null);
   const hysteresisRef = useRef<HysteresisContext>({
     previousMidi: null,
@@ -69,8 +128,9 @@ export function App() {
   });
 
   const lockedNote = useMemo(
-    () => (isManual ? describeMidiNote(targetMidi, a4Hz) : null),
-    [isManual, targetMidi, a4Hz]
+    () =>
+      isManual ? describeMidiNote(targetMidi, a4Hz, targetSpelling) : null,
+    [isManual, targetMidi, a4Hz, targetSpelling]
   );
 
   const engineRef = useRef<TunerEngine | null>(null);
@@ -98,7 +158,8 @@ export function App() {
         lastFrequencyRef.current,
         a4Hz,
         hysteresisRef.current,
-        forcedMidi
+        forcedMidi,
+        manualConfigRef.current.spelling
       );
       hysteresisRef.current = {
         previousMidi: updated.note.midi,
@@ -110,12 +171,14 @@ export function App() {
   }, [a4Hz]);
 
   useEffect(() => {
-    manualConfigRef.current = { isManual, targetMidi };
-    try {
-      localStorage.setItem(STORAGE_TARGET_MIDI_KEY, String(targetMidi));
-    } catch {
-      // Ignorar si el almacenamiento está restringido
-    }
+    saveToStorage(STORAGE_INSTRUMENT_KEY, tuningSelection.instrument);
+    saveToStorage(STORAGE_TUNING_KEY, tuningSelection.tuning.id);
+  }, [tuningSelection]);
+
+  useEffect(() => {
+    manualConfigRef.current = { isManual, targetMidi, spelling: targetSpelling };
+    saveToStorage(STORAGE_TARGET_MIDI_KEY, String(targetMidi));
+    saveToStorage(STORAGE_MANUAL_MODE_KEY, isManual ? '1' : '0');
 
     lastFrequencyRef.current = null;
     hysteresisRef.current = {
@@ -131,7 +194,7 @@ export function App() {
       isManual ? midiToFrequency(targetMidi, a4Ref.current) : null,
       true
     );
-  }, [isManual, targetMidi]);
+  }, [isManual, targetMidi, targetSpelling]);
 
   useEffect(() => {
     const engine = new TunerEngine({
@@ -149,7 +212,8 @@ export function App() {
             reading.frequency,
             a4Ref.current,
             prevCtx,
-            forcedMidi
+            forcedMidi,
+            manualConfigRef.current.spelling
           );
 
           const stateChanged =
@@ -222,10 +286,32 @@ export function App() {
     });
 
     engineRef.current = engine;
+    // El efecto de modo Manual corre antes que este: enviar la configuración vigente al
+    // motor recién creado (modo Manual persistido entre sesiones).
+    if (manualConfigRef.current.isManual) {
+      engine.setTargetFrequency(
+        midiToFrequency(manualConfigRef.current.targetMidi, a4Ref.current),
+        true
+      );
+    }
     return () => {
       void engine.stop();
     };
   }, []);
+
+  const handleSelectTuning = useCallback(
+    (instrument: InstrumentId, tuningId: string) => {
+      const next = resolveTuningSelection(instrument, tuningId);
+      setTuningSelection(next);
+      // Conservar la nota objetivo si pertenece a la nueva afinación; si no, ir a la cuerda más grave.
+      setTargetMidi((current) =>
+        tuningMidis(next.tuning).includes(current)
+          ? current
+          : spelledToMidi(next.tuning.notes[0]!)
+      );
+    },
+    []
+  );
 
   const toggleListening = useCallback(async () => {
     setErrorMsg(null);
@@ -316,8 +402,12 @@ export function App() {
             isManual={isManual}
             targetMidi={targetMidi}
             a4Hz={a4Hz}
+            instrumentId={tuningSelection.instrument}
+            tuning={tuning}
+            targetSpelling={targetSpelling}
             onToggleMode={setIsManual}
             onSelectTargetMidi={setTargetMidi}
+            onSelectTuning={handleSelectTuning}
           />
 
           <CalibrationControl a4Hz={a4Hz} onChange={setA4Hz} />
