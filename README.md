@@ -12,9 +12,10 @@ Funciona como aplicación web progresiva (**PWA**) instalable **100% sin interne
 
 | Parámetro | Especificación |
 | :--- | :--- |
-| **Modo de operación** | **Cromático puro estilo pedal** (detecta automáticamente las 12 notas `C..B` en cualquier afinación sin selectores previos) |
+| **Modos de operación** | **Automático** (detección cromática libre de las 12 notas `C..B`) y **Manual** con menú **«Nota objetivo»** (restringe el filtro DSP a `±5 semitonos` alrededor de la cuerda/nota elegida) |
 | **Rango de frecuencias** | **`27.5 Hz` (`A0`) a `2000 Hz`** — cubre bajo de 4, 5 y 6 cuerdas (`B0 = 30.87 Hz`, `E1 = 41.20 Hz`, *Drop A*) y guitarra de 6, 7 y 8 cuerdas en todo el diapasón |
 | **Precisión algorítmica** | **`< 0.05 cents`** en señales periódicas y **`< 0.08 cents`** con fundamental atenuada (*verificado por suite automatizada*) |
+| **Sensibilidad de entrada** | Puerta RMS base **`0.0035`** (claridad `0.72`) en Automático y **`0.0025`** (claridad `0.60`, ventana estrecha) en modo Manual para cuerdas suaves o difíciles |
 | **Bloqueo `✓ AFINADO` (Schmitt trigger)** | Entrada en **`±2.5 cents`** con histéresis de retención hasta **`±4.0 cents`** (evita parpadeos de color), acompañado de visor estroboscópico continuo con zona muerta fina en `±0.35 cents` |
 | **Calibración de referencia (`A4`)** | Ajustable entre **`415.0 Hz` y `466.0 Hz`** en pasos de `0.1` / `0.5` / `1 Hz` (con accesos directos a `430`, `432`, `440`, `442` y `444 Hz`), persistida en `localStorage` |
 | **Ventana y tasa de análisis** | Ventana deslizante de **`8192` muestras** (~`170.7 ms` a `48 kHz`) con avance (*hop*) de **`1024` muestras** (~`21.3 ms` = **~46.9 lecturas/segundo**) en hilo dedicado `AudioWorklet` |
@@ -31,9 +32,9 @@ Este programa resuelve ambos frentes (máxima precisión e inmunidad acústica) 
 1. **Pre-filtrado Pasa-Banda Butterworth (`24 Hz – 1800 Hz`):**
    * Dos filtros *Biquad* de 2º orden en cascada eliminan golpes graves sub-audibles (mesa/viento) y ruido agudo (soplido/ventiladores/trastes) antes de analizar el período.
 2. **`Float64` FFT-MPM (`McLeod Pitch Method` acelerado por Wiener–Khinchin):**
-   * Elimina el *offset* DC y aplica una puerta de ruido **RMS** (`minRms = 0.010`) con claridad mínima (`minClarity = 0.78`).
+   * Elimina el *offset* DC y aplica una puerta de ruido **RMS** (`minRms = 0.0035` en Automático; `0.0025` en Manual).
    * Calcula la autocorrelación lineal exacta en $O(N \log N)$ usando una **FFT Radix-2 propia de `16384` puntos** (`src/core/dsp/fft.ts`) combinada con la recurrencia exacta de energía de McLeod & Wyvill para obtener la **NSDF (*Normalized Square Difference Function*)**. Al basarse solo en la energía periódica, es inmune a ecos y desfases acústicos de sala.
-   * Extrae el primer *key maximum* que alcanza el `90%` del pico global, identificando la fundamental real incluso cuando los armónicos 2º y 3º dominan en micrófonos pequeños.
+   * En **modo Manual**, restringe la búsqueda de períodos a **`±5 semitonos`** alrededor de la **Nota objetivo**, bloqueando saltos al 2º/3º armónico y facilitando el enganche de cuerdas finas, graves o recién colocadas. En **modo Automático**, extrae el primer *key maximum* que alcanza el `90%` del pico global para evitar saltos de octava.
 3. **Refinamiento Espectral de Log-Magnitud QIFFT con Ventana Blackman–Harris de 4 términos:**
    * Opera únicamente sobre la magnitud `|X(ω)|` de las `8192` muestras completas (sin derivadas de fase sensibles a ecos de sala) mediante interpolación cuadrática de 0.25 bin alrededor de la fundamental —o del 2º armónico cuando la fundamental es muy débil—, logrando rechazo lateral **> 92 dB** y precisión **`< 0.02 cents`** sin sesgo parabólico.
 4. **Estabilizador y Bloqueo Tipo Pedal (`src/core/dsp/smoother.ts` y `src/core/music/notes.ts`):**
@@ -47,6 +48,7 @@ Este programa resuelve ambos frentes (máxima precisión e inmunidad acústica) 
 
 * **Visor Estroboscópico Superior:** las bandas luminosas se desplazan hacia la **izquierda** cuando la nota está baja (*flat*), hacia la **derecha** cuando está alta (*sharp*), y **se detienen por completo** dentro de **`±0.35 cents`**. Es la referencia más fina para calibrar quintaje/octavación.
 * **Arco LED, Aguja Amortiguada y Flechas (`▶` / `◀`):** cubre de `-50` a `+50 cents`. Las flechas, el LED central y el badge **`✓ AFINADO`** se iluminan en **verde esmeralda** al entrar en **`±2.5 cents`** (manteniéndose estables hasta `±4.0 cents`).
+* **Selector `MODO DE AFINACIÓN` (`AUTOMÁTICO` / `MANUAL`):** en **Automático** identifica libremente cualquier nota; al cambiar a **Manual**, el menú **«Nota objetivo»** (con accesos agrupados para Guitarra, Bajo y todas las notas de `A0` a `E5`) acota el motor DSP a `±5 semitonos` de esa frecuencia para enganchar cuerdas rebeldes o recién encordadas.
 * **Ajuste `PITCH / CALIBRACIÓN` (`A4`):** cambiar `A4` (por ejemplo a **`430 Hz`**) recalcula instantáneamente las frecuencias objetivo de las 12 notas en todas las octavas (`f = A4 · 2^((midi - 69) / 12)`).
 
 ---

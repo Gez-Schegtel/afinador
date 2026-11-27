@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TunerEngine } from './audio/tuner-engine';
 import {
   DEFAULT_A4_HZ,
   clampA4,
+  clampTargetMidi,
+  describeMidiNote,
+  midiToFrequency,
   resolveChromaticNote,
   type ChromaticMatch,
   type HysteresisContext,
 } from './core/music/notes';
 import { CalibrationControl } from './components/CalibrationControl';
+import { TargetNoteControl } from './components/TargetNoteControl';
 import { TunerGauge, type GaugeFrameData } from './components/TunerGauge';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
+const STORAGE_TARGET_MIDI_KEY = 'afinador_target_midi';
 const UI_READOUT_INTERVAL_MS = 85; // ~12 Hz para lectura digital calma y legible
 
 function loadInitialA4(): number {
@@ -23,8 +28,21 @@ function loadInitialA4(): number {
   }
 }
 
+function loadInitialTargetMidi(): number {
+  try {
+    const raw = localStorage.getItem(STORAGE_TARGET_MIDI_KEY);
+    if (!raw) return 40; // E2 (6ª cuerda guitarra)
+    return clampTargetMidi(Number.parseInt(raw, 10));
+  } catch {
+    return 40;
+  }
+}
+
 export function App() {
   const [a4Hz, setA4Hz] = useState<number>(loadInitialA4);
+  const [isManual, setIsManual] = useState<boolean>(false);
+  const [targetMidi, setTargetMidi] = useState<number>(loadInitialTargetMidi);
+
   const [isListening, setIsListening] = useState(false);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [wakeLocked, setWakeLocked] = useState(false);
@@ -35,6 +53,7 @@ export function App() {
   const [inputLevel, setInputLevel] = useState(0);
 
   const a4Ref = useRef<number>(a4Hz);
+  const manualConfigRef = useRef({ isManual, targetMidi });
   const lastFrequencyRef = useRef<number | null>(null);
   const hysteresisRef = useRef<HysteresisContext>({
     previousMidi: null,
@@ -49,6 +68,13 @@ export function App() {
     isListening: false,
   });
 
+  const lockedNote = useMemo(
+    () => (isManual ? describeMidiNote(targetMidi, a4Hz) : null),
+    [isManual, targetMidi, a4Hz]
+  );
+
+  const engineRef = useRef<TunerEngine | null>(null);
+
   useEffect(() => {
     a4Ref.current = a4Hz;
     try {
@@ -57,11 +83,22 @@ export function App() {
       // Ignorar si el almacenamiento está restringido
     }
 
+    if (manualConfigRef.current.isManual) {
+      engineRef.current?.setTargetFrequency(
+        midiToFrequency(manualConfigRef.current.targetMidi, a4Hz),
+        false
+      );
+    }
+
     if (lastFrequencyRef.current !== null) {
+      const forcedMidi = manualConfigRef.current.isManual
+        ? manualConfigRef.current.targetMidi
+        : null;
       const updated = resolveChromaticNote(
         lastFrequencyRef.current,
         a4Hz,
-        hysteresisRef.current
+        hysteresisRef.current,
+        forcedMidi
       );
       hysteresisRef.current = {
         previousMidi: updated.note.midi,
@@ -72,7 +109,29 @@ export function App() {
     }
   }, [a4Hz]);
 
-  const engineRef = useRef<TunerEngine | null>(null);
+  useEffect(() => {
+    manualConfigRef.current = { isManual, targetMidi };
+    try {
+      localStorage.setItem(STORAGE_TARGET_MIDI_KEY, String(targetMidi));
+    } catch {
+      // Ignorar si el almacenamiento está restringido
+    }
+
+    lastFrequencyRef.current = null;
+    hysteresisRef.current = {
+      previousMidi: null,
+      previousDirection: null,
+    };
+    gaugeFrameRef.current.match = null;
+    gaugeFrameRef.current.isHolding = false;
+    setDisplayMatch(null);
+    setIsHolding(false);
+
+    engineRef.current?.setTargetFrequency(
+      isManual ? midiToFrequency(targetMidi, a4Ref.current) : null,
+      true
+    );
+  }, [isManual, targetMidi]);
 
   useEffect(() => {
     const engine = new TunerEngine({
@@ -83,10 +142,14 @@ export function App() {
         if (reading.frequency !== null) {
           lastFrequencyRef.current = reading.frequency;
           const prevCtx = hysteresisRef.current;
+          const forcedMidi = manualConfigRef.current.isManual
+            ? manualConfigRef.current.targetMidi
+            : null;
           const match = resolveChromaticNote(
             reading.frequency,
             a4Ref.current,
-            prevCtx
+            prevCtx,
+            forcedMidi
           );
 
           const stateChanged =
@@ -98,7 +161,6 @@ export function App() {
             previousDirection: match.direction,
           };
 
-          // El Canvas 60 FPS recibe siempre el último cuadro exacto al instante:
           gaugeFrameRef.current = {
             match,
             isHolding: reading.isHolding,
@@ -106,8 +168,6 @@ export function App() {
             isListening: true,
           };
 
-          // El texto numérico se refresca inmediatamente ante cambios de nota/estado,
-          // o cada ~85 ms para que los dígitos sean serenos y fáciles de leer.
           if (
             stateChanged ||
             now - lastUiUpdateTimeRef.current >= UI_READOUT_INTERVAL_MS
@@ -218,9 +278,18 @@ export function App() {
         <TunerGauge
           frameRef={gaugeFrameRef}
           displayMatch={displayMatch}
+          lockedNote={lockedNote}
           isListening={isListening}
           isHolding={isHolding}
           a4Hz={a4Hz}
+        />
+
+        <TargetNoteControl
+          isManual={isManual}
+          targetMidi={targetMidi}
+          a4Hz={a4Hz}
+          onToggleMode={setIsManual}
+          onSelectTargetMidi={setTargetMidi}
         />
 
         <CalibrationControl a4Hz={a4Hz} onChange={setA4Hz} />

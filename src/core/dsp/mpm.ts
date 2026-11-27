@@ -14,11 +14,11 @@
 import { FFT64 } from './fft';
 
 export interface MPMOptions {
-  /** Umbral mínimo de energía RMS para puerta de ruido (default: 0.010) */
+  /** Umbral mínimo de energía RMS para puerta de ruido (default: 0.0035) */
   minRms?: number;
   /** Fracción del pico NSDF máximo requerida para elegir el primer armónico (default: 0.90) */
   clarityThreshold?: number;
-  /** Claridad periódica mínima aceptable en [0, 1] (default: 0.78) */
+  /** Claridad periódica mínima aceptable en [0, 1] (default: 0.72) */
   minClarity?: number;
   /** Frecuencia mínima detectable en Hz (default: 27.5 Hz — cubre A0 y B0 de bajo 5 cuerdas) */
   minFreq?: number;
@@ -33,9 +33,9 @@ export interface PitchResult {
 }
 
 const DEFAULT_OPTIONS: Required<MPMOptions> = {
-  minRms: 0.01,
+  minRms: 0.0035,
   clarityThreshold: 0.9,
-  minClarity: 0.78,
+  minClarity: 0.72,
   minFreq: 27.5,
   maxFreq: 2000,
 };

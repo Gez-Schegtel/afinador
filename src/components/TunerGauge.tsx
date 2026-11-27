@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { ChromaticMatch } from '../core/music/notes';
+import type { ChromaticMatch, NoteDescriptor } from '../core/music/notes';
 
 export interface GaugeFrameData {
   match: ChromaticMatch | null;
@@ -11,6 +11,7 @@ export interface GaugeFrameData {
 interface TunerGaugeProps {
   frameRef: React.RefObject<GaugeFrameData>;
   displayMatch: ChromaticMatch | null;
+  lockedNote?: NoteDescriptor | null;
   isListening: boolean;
   isHolding: boolean;
   a4Hz: number;
@@ -31,6 +32,7 @@ function centsToAngle(cents: number): number {
 export function TunerGauge({
   frameRef,
   displayMatch,
+  lockedNote = null,
   isListening,
   isHolding,
   a4Hz,
@@ -295,6 +297,13 @@ export function TunerGauge({
     ? `${displayMatch.cents >= 0 ? '+' : ''}${displayMatch.cents.toFixed(1)} ct`
     : '— ct';
 
+  const activeOrLockedNote = displayMatch?.note ?? lockedNote;
+  const targetHzText = displayMatch
+    ? `${displayMatch.targetHz.toFixed(1)} Hz`
+    : lockedNote
+      ? `${lockedNote.frequency.toFixed(1)} Hz`
+      : '— Hz';
+
   return (
     <section className="pedal-screen" aria-label="Visor del afinador cromático">
       <div
@@ -318,19 +327,21 @@ export function TunerGauge({
           </span>
 
           <div className="pedal-note-box">
-            {displayMatch ? (
+            {activeOrLockedNote ? (
               <>
-                <span className={`pedal-letter ${statusClass}`}>
-                  {displayMatch.note.letter}
+                <span
+                  className={`pedal-letter ${displayMatch ? statusClass : 'note-waiting'}`}
+                >
+                  {activeOrLockedNote.letter}
                 </span>
                 <div className="pedal-accidental-col">
                   <span
-                    className={`pedal-sharp ${displayMatch.note.isSharp ? 'is-lit' : ''}`}
+                    className={`pedal-sharp ${activeOrLockedNote.isSharp ? `is-lit ${displayMatch ? '' : 'is-waiting'}` : ''}`}
                   >
                     ♯
                   </span>
                   <span className="pedal-octave">
-                    {displayMatch.note.octave}
+                    {activeOrLockedNote.octave}
                   </span>
                 </div>
               </>
@@ -357,6 +368,17 @@ export function TunerGauge({
                   : isFlat
                     ? 'BAJO · SUBIR ↑'
                     : 'ALTO · BAJAR ↓'}
+              </span>
+            </>
+          ) : lockedNote ? (
+            <>
+              <span className="latin-pill">
+                OBJETIVO: {lockedNote.fullName} ({lockedNote.latinName})
+              </span>
+              <span className="idle-hint">
+                {isListening
+                  ? `Modo manual · Esperando ${lockedNote.fullName}...`
+                  : 'Modo manual · Activá el pedal abajo'}
               </span>
             </>
           ) : (
@@ -386,7 +408,7 @@ export function TunerGauge({
           <div className="telemetry-cell">
             <span className="telemetry-label">REF (A4={a4Hz})</span>
             <span className="telemetry-val telemetry-ref">
-              {displayMatch ? `${displayMatch.targetHz.toFixed(1)} Hz` : '— Hz'}
+              {targetHzText}
             </span>
           </div>
         </div>

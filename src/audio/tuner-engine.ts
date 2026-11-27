@@ -21,11 +21,27 @@ export class TunerEngine {
   private readonly wakeLocker: ScreenWakeLocker;
   private readonly callbacks: TunerEngineCallbacks;
   private running = false;
+  private targetHz: number | null = null;
 
   constructor(callbacks: TunerEngineCallbacks) {
     this.callbacks = callbacks;
     this.wakeLocker = new ScreenWakeLocker(callbacks.onWakeLockChange);
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+  }
+
+  public setTargetFrequency(
+    targetHz: number | null,
+    resetSmoother: boolean = false
+  ): void {
+    this.targetHz = targetHz;
+    this.smoother.setManualMode(targetHz !== null);
+    if (resetSmoother) {
+      this.smoother.reset();
+    }
+    this.workletNode?.port.postMessage({
+      type: 'set-target',
+      targetHz,
+    });
   }
 
   public isRunning(): boolean {
@@ -91,6 +107,13 @@ export class TunerEngine {
       this.workletNode = worklet;
       this.silentGainNode = silentGain;
       this.smoother.reset();
+      this.smoother.setManualMode(this.targetHz !== null);
+      if (this.targetHz !== null) {
+        worklet.port.postMessage({
+          type: 'set-target',
+          targetHz: this.targetHz,
+        });
+      }
       this.running = true;
 
       document.addEventListener(

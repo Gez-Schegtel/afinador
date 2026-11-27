@@ -20,6 +20,11 @@ declare const sampleRate: number;
 const WINDOW_SIZE = 8192;
 const HOP_SIZE = 1024;
 
+interface WorkletCommandMessage {
+  type: 'set-target';
+  targetHz: number | null;
+}
+
 /**
  * Filtro Biquad Butterworth de 2º orden en cascada (pasa-altos 24 Hz + pasa-bajos 1800 Hz)
  * para eliminar golpes graves de mesa/soplidos y ruido agudo de ventilador/trastes antes de MPM.
@@ -92,6 +97,16 @@ class PitchWorkletProcessor extends AudioWorkletProcessor {
   private writeIndex = 0;
   private samplesSinceLastHop = 0;
   private samplesCollected = 0;
+  private targetHz: number | null = null;
+
+  constructor() {
+    super();
+    this.port.onmessage = (event: MessageEvent<WorkletCommandMessage>) => {
+      if (event.data?.type === 'set-target') {
+        this.targetHz = event.data.targetHz;
+      }
+    };
+  }
 
   public process(inputs: Float32Array[][]): boolean {
     const inputChannels = inputs[0];
@@ -140,7 +155,16 @@ class PitchWorkletProcessor extends AudioWorkletProcessor {
       this.analysisFrame.set(this.ringBuffer.subarray(0, split), tailLen);
     }
 
-    const result = this.detector.detect(this.analysisFrame, sampleRate);
+    const result =
+      this.targetHz !== null && this.targetHz > 0
+        ? this.detector.detect(this.analysisFrame, sampleRate, {
+            minFreq: Math.max(25, this.targetHz * Math.pow(2, -5 / 12)),
+            maxFreq: Math.min(2200, this.targetHz * Math.pow(2, 5 / 12)),
+            minRms: 0.0025,
+            minClarity: 0.6,
+            clarityThreshold: 0.85,
+          })
+        : this.detector.detect(this.analysisFrame, sampleRate);
     this.port.postMessage(result);
   }
 }

@@ -3,6 +3,9 @@ export const MAX_A4_HZ = 466;
 export const DEFAULT_A4_HZ = 440;
 export const QUICK_A4_PRESETS = [430, 432, 440, 442, 444] as const;
 
+export const TARGET_NOTE_MIN_MIDI = 21; // A0
+export const TARGET_NOTE_MAX_MIDI = 76; // E5
+
 /**
  * Ventana de entrada al estado AFINADO (±2.5 cents, estándar en pedales Boss TU-3 / Korg).
  */
@@ -72,10 +75,45 @@ export interface HysteresisContext {
   previousDirection: TuningDirection | null;
 }
 
+export interface TargetNoteOption {
+  midi: number;
+  label: string;
+}
+
+export interface TargetNoteGroup {
+  label: string;
+  options: TargetNoteOption[];
+}
+
+const GUITAR_TARGET_SPECS: readonly { midi: number; role: string }[] = [
+  { midi: 40, role: '6ª Guitarra' },
+  { midi: 45, role: '5ª Guitarra' },
+  { midi: 50, role: '4ª Guitarra' },
+  { midi: 55, role: '3ª Guitarra' },
+  { midi: 59, role: '2ª Guitarra' },
+  { midi: 64, role: '1ª Guitarra' },
+];
+
+const BASS_TARGET_SPECS: readonly { midi: number; role: string }[] = [
+  { midi: 23, role: '5ª Bajo' },
+  { midi: 28, role: '4ª Bajo' },
+  { midi: 33, role: '3ª Bajo' },
+  { midi: 38, role: '2ª Bajo / Drop D' },
+  { midi: 43, role: '1ª Bajo' },
+];
+
 export function clampA4(hz: number): number {
   if (!Number.isFinite(hz)) return DEFAULT_A4_HZ;
   const clamped = Math.min(MAX_A4_HZ, Math.max(MIN_A4_HZ, hz));
   return Math.round(clamped * 10) / 10;
+}
+
+export function clampTargetMidi(midi: number): number {
+  if (!Number.isFinite(midi)) return 40;
+  return Math.min(
+    TARGET_NOTE_MAX_MIDI,
+    Math.max(TARGET_NOTE_MIN_MIDI, Math.round(midi))
+  );
 }
 
 export function midiToFrequency(
@@ -118,25 +156,76 @@ export function describeMidiNote(
 }
 
 /**
- * Resuelve la nota cromática aplicando histéresis de pedal (Schmitt trigger) tanto en
- * la frontera entre semitonos como en el bloqueo de estado AFINADO.
+ * Construye los grupos de opciones para el menú «Nota objetivo» en modo Manual
+ * cubriendo A0 (MIDI 21) hasta E5 (MIDI 76) sin duplicados y con Hz actualizados según A4.
+ */
+export function buildTargetNoteGroups(
+  a4Hz: number = DEFAULT_A4_HZ
+): TargetNoteGroup[] {
+  const calibratedA4 = clampA4(a4Hz);
+  const assignedMidis = new Set<number>();
+
+  const guitarOptions: TargetNoteOption[] = GUITAR_TARGET_SPECS.map((item) => {
+    assignedMidis.add(item.midi);
+    const note = describeMidiNote(item.midi, calibratedA4);
+    return {
+      midi: item.midi,
+      label: `${note.fullName} · ${note.latinName} — ${item.role} (${note.frequency.toFixed(1)} Hz)`,
+    };
+  });
+
+  const bassOptions: TargetNoteOption[] = BASS_TARGET_SPECS.map((item) => {
+    assignedMidis.add(item.midi);
+    const note = describeMidiNote(item.midi, calibratedA4);
+    return {
+      midi: item.midi,
+      label: `${note.fullName} · ${note.latinName} — ${item.role} (${note.frequency.toFixed(1)} Hz)`,
+    };
+  });
+
+  const otherOptions: TargetNoteOption[] = [];
+  for (let midi = TARGET_NOTE_MIN_MIDI; midi <= TARGET_NOTE_MAX_MIDI; midi++) {
+    if (assignedMidis.has(midi)) continue;
+    const note = describeMidiNote(midi, calibratedA4);
+    otherOptions.push({
+      midi,
+      label: `${note.fullName} · ${note.latinName} (${note.frequency.toFixed(1)} Hz)`,
+    });
+  }
+
+  return [
+    { label: 'Guitarra (6ª a 1ª)', options: guitarOptions },
+    { label: 'Bajo (5ª a 1ª y Drop D)', options: bassOptions },
+    { label: 'Otras notas cromáticas (A0 – E5)', options: otherOptions },
+  ];
+}
+
+/**
+ * Resuelve la nota cromática aplicando histéresis de pedal (Schmitt trigger) en modo
+ * Automático o evaluando directamente respecto a `forcedMidi` en modo Manual.
  */
 export function resolveChromaticNote(
   detectedHz: number,
   a4Hz: number = DEFAULT_A4_HZ,
-  hysteresis?: HysteresisContext
+  hysteresis?: HysteresisContext,
+  forcedMidi: number | null = null
 ): ChromaticMatch {
   const calibratedA4 = clampA4(a4Hz);
   const midiFloat = frequencyToMidiFloat(detectedHz, calibratedA4);
 
-  let targetMidi = Math.round(midiFloat);
-  if (
-    hysteresis?.previousMidi !== null &&
-    hysteresis?.previousMidi !== undefined &&
-    Math.abs(midiFloat - hysteresis.previousMidi) <=
-      NOTE_SWITCH_HYSTERESIS_SEMITONES
-  ) {
-    targetMidi = hysteresis.previousMidi;
+  let targetMidi: number;
+  if (forcedMidi !== null && forcedMidi !== undefined) {
+    targetMidi = Math.round(forcedMidi);
+  } else {
+    targetMidi = Math.round(midiFloat);
+    if (
+      hysteresis?.previousMidi !== null &&
+      hysteresis?.previousMidi !== undefined &&
+      Math.abs(midiFloat - hysteresis.previousMidi) <=
+        NOTE_SWITCH_HYSTERESIS_SEMITONES
+    ) {
+      targetMidi = hysteresis.previousMidi;
+    }
   }
 
   const note = describeMidiNote(targetMidi, calibratedA4);

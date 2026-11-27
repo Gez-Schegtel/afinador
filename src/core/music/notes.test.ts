@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TARGET_NOTE_MAX_MIDI,
+  TARGET_NOTE_MIN_MIDI,
+  buildTargetNoteGroups,
   clampA4,
   describeMidiNote,
   midiToFrequency,
@@ -63,5 +66,37 @@ describe('Mapeo cromático estilo pedal con histéresis Schmitt trigger', () => 
     expect(clampA4(300)).toBe(415);
     expect(clampA4(600)).toBe(466);
     expect(describeMidiNote(69, 432).frequency).toBeCloseTo(432, 6);
+  });
+
+  it('mantiene forcedMidi en modo Manual aunque la cuerda esté -220 cents abajo', () => {
+    const e2 = midiToFrequency(40, 440);
+    // Cuerda floja 220 cents por debajo de E2 (cerca de D2 = MIDI 38)
+    const veryFlatE2 = e2 * Math.pow(2, -220 / 1200);
+    const manualMatch = resolveChromaticNote(veryFlatE2, 440, undefined, 40);
+
+    expect(manualMatch.note.midi).toBe(40);
+    expect(manualMatch.note.fullName).toBe('E2');
+    expect(manualMatch.cents).toBeCloseTo(-220, 4);
+    expect(manualMatch.clampedCents).toBe(-50);
+    expect(manualMatch.direction).toBe('flat');
+  });
+
+  it('genera el catálogo de Nota objetivo cubriendo A0..E5 sin duplicados', () => {
+    const groups = buildTargetNoteGroups(430);
+    expect(groups).toHaveLength(3);
+
+    const allMidis = groups.flatMap((g) => g.options.map((o) => o.midi));
+    const uniqueMidis = new Set(allMidis);
+    expect(uniqueMidis.size).toBe(allMidis.length);
+    expect(allMidis.length).toBe(
+      TARGET_NOTE_MAX_MIDI - TARGET_NOTE_MIN_MIDI + 1
+    );
+    for (let m = TARGET_NOTE_MIN_MIDI; m <= TARGET_NOTE_MAX_MIDI; m++) {
+      expect(uniqueMidis.has(m)).toBe(true);
+    }
+
+    // Verifica que las etiquetas reflejan la calibración A4 = 430 Hz (A2 = 107.5 Hz)
+    const a2Option = groups[0]!.options.find((o) => o.midi === 45);
+    expect(a2Option?.label).toContain('107.5 Hz');
   });
 });

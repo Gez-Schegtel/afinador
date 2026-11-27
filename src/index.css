@@ -273,6 +273,10 @@ input {
   color: #334155;
 }
 
+.note-waiting {
+  color: #475569;
+}
+
 .pedal-accidental-col {
   display: flex;
   flex-direction: column;
@@ -295,6 +299,12 @@ input {
   text-shadow: 0 0 14px rgba(56, 189, 248, 0.65);
 }
 
+.pedal-sharp.is-lit.is-waiting {
+  color: #38bdf8;
+  opacity: 0.45;
+  text-shadow: none;
+}
+
 .pedal-octave {
   font-size: 1.45rem;
   font-weight: 700;
@@ -307,6 +317,7 @@ input {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
   min-height: 26px;
 }
 
@@ -537,6 +548,93 @@ input {
   border-color: var(--led-cyan);
   background: rgba(56, 189, 248, 0.14);
   color: var(--text-primary);
+}
+
+/* Tarjeta Modo Automático / Manual + Nota objetivo */
+.target-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.target-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.mode-btn {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.mode-btn.is-active {
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--led-cyan);
+}
+
+.target-select-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.target-select-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.target-select-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.target-select {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border-chassis);
+  background: var(--bg-screen);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.target-select:focus {
+  border-color: var(--led-cyan);
 }
 
 /* Footswitch del pedal */

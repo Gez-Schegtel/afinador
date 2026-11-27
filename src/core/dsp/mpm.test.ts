@@ -124,4 +124,29 @@ describe('PitchSmoother — Estabilidad ante batido acústico real de cuerda', (
     const expired = smoother.update(null, 0, 0.001, 40 * 21 + 700);
     expect(expired.frequency).toBeNull();
   });
+
+  it('en modo Manual acotado a ±5 semitonos de E2 (82.41 Hz) engancha la fundamental aunque el 2º armónico sea 12x más fuerte', () => {
+    const sampleRate = 48000;
+    const e2Hz = midiToFrequency(40, 440); // 82.41 Hz
+    // Señal extrema: fundamental mínima (0.08) vs 2º armónico gigante (1.0)
+    const extremeWeakFundamental = generateInstrumentTone(
+      e2Hz,
+      sampleRate,
+      8192,
+      [0.08, 1.0, 0.6]
+    );
+
+    const manualResult = detectPitchMPM(extremeWeakFundamental, sampleRate, {
+      minFreq: Math.max(25, e2Hz * Math.pow(2, -5 / 12)),
+      maxFreq: Math.min(2200, e2Hz * Math.pow(2, 5 / 12)),
+      minRms: 0.0025,
+      minClarity: 0.6,
+      clarityThreshold: 0.85,
+    });
+
+    expect(manualResult.frequency).not.toBeNull();
+    expect(Math.abs(centsBetween(manualResult.frequency!, e2Hz))).toBeLessThan(
+      0.08
+    );
+  });
 });

@@ -73,12 +73,17 @@ export class PitchSmoother {
   private lastValidTimestamp = 0;
   private prevRms = 0;
   private attackBlankFrames = 0;
+  private manualMode = false;
 
   constructor(options?: PitchSmootherOptions) {
     this.steadyAlpha = options?.steadyAlpha ?? 0.085;
     this.tuningAlpha = options?.tuningAlpha ?? 0.3;
     this.jumpSemitones = options?.jumpSemitones ?? 0.65;
     this.holdMs = options?.holdMs ?? 650;
+  }
+
+  public setManualMode(enabled: boolean): void {
+    this.manualMode = enabled;
   }
 
   public reset(): void {
@@ -119,7 +124,11 @@ export class PitchSmoother {
       }
     }
 
-    const requiredClarity = this.smoothedSemi === null ? 0.82 : 0.74;
+    const requiredClarity = this.manualMode
+      ? 0.6
+      : this.smoothedSemi === null
+        ? 0.75
+        : 0.68;
 
     if (
       frequency !== null &&
