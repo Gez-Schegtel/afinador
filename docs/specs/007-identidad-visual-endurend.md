@@ -42,7 +42,7 @@
   - **verde = afinado**;
   - **ámbar = bajo**;
   - **rosado/rojo = alto**;
-  - **cian = selección/referencia**.
+  - **lavanda (`#c9a0ea`) = selección/referencia** (antes cian/verde azulado; se cambió por uno de la familia del logo).
 - **Contraste medido:** el violeta del logo da **2.0:1** sobre el fondo casi negro anterior (ilegible), **4.6:1** sobre el ocre del gabinete y **7.0:1** sobre arena. El texto sobre el gabinete (`#3a1442`) da 7.2:1 y el de las placas, entre 5.7:1 y 13.9:1: todo cumple WCAG AA (≥ 4.5:1).
 - **Tipografía:** fuentes del sistema para la interfaz y los números (legibilidad). El carácter psicodélico lo aportan el logo y el arte del chasis. **No** se cargan fuentes externas (regla de offline).
 - **Diseño original**, inspirado en el género. **No** imita el aspecto de ningún pedal comercial concreto.

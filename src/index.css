@@ -1,7 +1,7 @@
 /*
  * Identidad Endurend Musical Gadgets (Spec 007): gabinete de pedal pintado en ocre de desierto con
  * un sol psicodélico, placas y visor en violeta profundo. Los colores con significado del afinador
- * no cambian: verde = afinado, ámbar = bajo, rosado = alto, verde azulado = selección.
+ * no cambian: verde = afinado, ámbar = bajo, rosado = alto, lavanda = selección.
  */
 :root {
   color-scheme: dark;
@@ -20,7 +20,8 @@
   --led-green: #10b981;
   --led-amber: #f59e0b;
   --led-red: #fb7185;
-  --led-cyan: #3dd6c6;
+  /* Selección (botones activos, foco, puntos): lavanda de la familia del logo */
+  --select: #c9a0ea;
 
   /* Marca */
   --brand-logo: #662482;
@@ -73,12 +74,12 @@ select {
 
 /* Foco visible solo al navegar con teclado (U-02) */
 :focus-visible {
-  outline: 2px solid var(--led-cyan);
+  outline: 2px solid var(--select);
   outline-offset: 2px;
 }
 
 .hz-input-wrap:focus-within {
-  border-color: var(--led-cyan);
+  border-color: var(--select);
 }
 
 .pedal-chassis {
@@ -185,7 +186,7 @@ select {
 
 .signal-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--led-cyan), var(--led-green));
+  background: linear-gradient(90deg, var(--select), var(--led-green));
   transition: width 70ms linear;
 }
 
@@ -241,8 +242,8 @@ select {
 }
 
 .section-nav-btn.is-active {
-  background: rgba(61, 214, 198, 0.16);
-  color: var(--led-cyan);
+  background: rgba(201, 160, 234, 0.16);
+  color: var(--select);
 }
 
 .section-loading {
@@ -267,9 +268,9 @@ select {
 }
 
 .info-banner {
-  background: #12303a;
-  border: 1px solid rgba(61, 214, 198, 0.55);
-  color: #c8f4ef;
+  background: #2a1838;
+  border: 1px solid rgba(201, 160, 234, 0.55);
+  color: #ecdcfa;
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 0.84rem;
@@ -293,7 +294,7 @@ select {
 
 .tempo-unit {
   font-size: 2.6rem;
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 .tempo-equals {
@@ -381,8 +382,8 @@ select {
 }
 
 .beat-led.is-lit {
-  background: var(--led-cyan);
-  box-shadow: 0 0 14px var(--led-cyan);
+  background: var(--select);
+  box-shadow: 0 0 14px var(--select);
 }
 
 .beat-led.is-accent.is-lit {
@@ -404,7 +405,7 @@ select {
 .toggle-row input {
   width: 20px;
   height: 20px;
-  accent-color: var(--led-cyan);
+  accent-color: var(--select);
   cursor: pointer;
 }
 
@@ -434,8 +435,8 @@ select {
 }
 
 .sub-tab.is-active {
-  background: rgba(61, 214, 198, 0.16);
-  color: var(--led-cyan);
+  background: rgba(201, 160, 234, 0.16);
+  color: var(--select);
 }
 
 .chords-layout {
@@ -480,7 +481,7 @@ select {
 .chord-name {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 .chord-alt {
@@ -521,7 +522,7 @@ select {
   border: none;
   background: none;
   padding: 0;
-  color: var(--led-cyan);
+  color: var(--select);
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
@@ -600,12 +601,12 @@ select {
 }
 
 .chord-diagram .cd-barre {
-  fill: var(--led-cyan);
+  fill: var(--select);
   opacity: 0.45;
 }
 
 .chord-diagram .cd-dot {
-  fill: var(--led-cyan);
+  fill: var(--select);
 }
 
 .chord-diagram .cd-dot-root {
@@ -765,7 +766,7 @@ select {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--led-cyan);
+  background: var(--select);
   color: var(--bg-outer);
   font-size: 0.66rem;
   font-weight: 900;
@@ -919,12 +920,12 @@ select {
 }
 
 .pedal-sharp.is-lit {
-  color: var(--led-cyan);
-  text-shadow: 0 0 14px rgba(61, 214, 198, 0.65);
+  color: var(--select);
+  text-shadow: 0 0 14px rgba(201, 160, 234, 0.65);
 }
 
 .pedal-sharp.is-lit.is-waiting {
-  color: #38bdf8;
+  color: var(--select);
   opacity: 0.45;
   text-shadow: none;
 }
@@ -1036,7 +1037,7 @@ select {
 }
 
 .telemetry-ref {
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 /* Tarjeta PITCH / Calibración */
@@ -1118,7 +1119,7 @@ select {
 .hz-prefix {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 .hz-input-wrap input {
@@ -1169,8 +1170,8 @@ select {
 }
 
 .chip-btn.is-active {
-  border-color: var(--led-cyan);
-  background: rgba(61, 214, 198, 0.14);
+  border-color: var(--select);
+  background: rgba(201, 160, 234, 0.14);
   color: var(--text-primary);
 }
 
@@ -1220,8 +1221,8 @@ select {
 }
 
 .mode-btn.is-active {
-  background: rgba(61, 214, 198, 0.16);
-  color: var(--led-cyan);
+  background: rgba(201, 160, 234, 0.16);
+  color: var(--select);
 }
 
 .target-select-row {
@@ -1248,9 +1249,9 @@ select {
   font-size: 0.72rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--led-cyan);
-  background: rgba(61, 214, 198, 0.12);
-  border: 1px solid rgba(61, 214, 198, 0.3);
+  color: var(--select);
+  background: rgba(201, 160, 234, 0.12);
+  border: 1px solid rgba(201, 160, 234, 0.3);
   padding: 2px 8px;
   border-radius: 7px;
 }
@@ -1277,7 +1278,7 @@ select {
 }
 
 .target-select:focus {
-  border-color: var(--led-cyan);
+  border-color: var(--select);
 }
 
 .tuning-picker {
@@ -1307,7 +1308,7 @@ select {
 .tuning-description {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 .tuning-changes {
@@ -1329,9 +1330,9 @@ select {
 }
 
 .tuning-warning.is-info {
-  color: var(--led-cyan);
-  background: rgba(61, 214, 198, 0.12);
-  border-color: rgba(61, 214, 198, 0.3);
+  color: var(--select);
+  background: rgba(201, 160, 234, 0.12);
+  border-color: rgba(201, 160, 234, 0.3);
 }
 
 .string-btns {
@@ -1368,13 +1369,13 @@ select {
 }
 
 .string-btn.is-active {
-  border-color: var(--led-cyan);
-  background: rgba(61, 214, 198, 0.15);
+  border-color: var(--select);
+  background: rgba(201, 160, 234, 0.15);
   color: var(--text-primary);
 }
 
 .string-btn.is-active .string-btn-num {
-  color: var(--led-cyan);
+  color: var(--select);
 }
 
 /* Footswitch del pedal */

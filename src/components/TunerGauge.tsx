@@ -33,7 +33,7 @@ function readGaugePalette() {
     tick: v('--gauge-tick', '#64748b'),
     tickStrong: v('--gauge-tick-strong', '#94a3b8'),
     screen: v('--bg-screen', '#070a12'),
-    selection: v('--led-cyan', '#38bdf8'),
+    selection: v('--select', '#c9a0ea'),
   };
 }
 
