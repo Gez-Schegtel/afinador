@@ -1170,6 +1170,25 @@ select {
   flex-wrap: wrap;
 }
 
+.calibration-card > .preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+.calibration-card > .preset-chips .chip-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 390px) {
+  .calibration-card > .preset-chips .chip-btn {
+    font-size: 0.68rem;
+    padding: 4px 5px;
+  }
+}
+
 .chip-btn {
   flex: 1 1 auto;
   min-height: 32px;
@@ -1202,6 +1221,8 @@ select {
 }
 
 .target-card > .toggle-row {
+  width: 100%;
+  max-width: 265px;
   align-self: center;
 }
 
@@ -1212,14 +1233,17 @@ select {
 .mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
   background: var(--bg-screen);
   border: 1px solid var(--border-chassis);
   border-radius: 10px;
   padding: 3px;
   gap: 3px;
+}
+
+.target-header > .mode-switch {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .mode-btn {
@@ -1582,11 +1606,17 @@ select {
 }
 
 .tabs-toolbar {
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px 14px;
+}
+
+.tabs-toolbar > .chip-btn,
+.tabs-toolbar-actions > .chip-btn {
+  flex: 0 0 auto;
 }
 
 .tabs-toolbar-meta {
