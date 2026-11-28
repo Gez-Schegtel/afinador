@@ -1059,17 +1059,20 @@ select {
   gap: 9px;
 }
 
-.calibration-header {
+.calibration-header,
+.target-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+  text-align: center;
+  gap: 9px;
 }
 
 .calibration-title-group {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 2px;
 }
 
@@ -1088,7 +1091,10 @@ select {
 .calibration-stepper {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
 }
 
 .step-btn {
@@ -1159,6 +1165,7 @@ select {
 
 .preset-chips {
   display: flex;
+  justify-content: center;
   gap: 6px;
   flex-wrap: wrap;
 }
@@ -1194,17 +1201,20 @@ select {
   gap: 10px;
 }
 
-.target-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+.target-card > .toggle-row {
+  align-self: center;
+}
+
+.pedal-controls-col > .tabs-toolbar-actions {
+  justify-content: center;
 }
 
 .mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
   background: var(--bg-screen);
   border: 1px solid var(--border-chassis);
   border-radius: 10px;
@@ -1516,12 +1526,12 @@ select {
   .pedal-controls-col {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 14px;
+    justify-content: center;
+    gap: 16px;
   }
 
   .pedal-footswitch-area {
-    margin-top: auto;
+    margin-top: 4px;
   }
 
   .string-btns {
