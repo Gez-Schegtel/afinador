@@ -10,7 +10,7 @@ import {
   type AppRoute,
 } from './routes';
 
-describe('Rutas por hash (Spec 006)', () => {
+describe('Rutas por hash (Specs 006 y 008)', () => {
   it('parsea todas las rutas conocidas', () => {
     expect(parseRoute('#/afinador')).toEqual({ section: 'tuner' });
     expect(parseRoute('#/acordes')).toEqual({ section: 'chords', tab: 'dictionary' });
@@ -24,6 +24,23 @@ describe('Rutas por hash (Spec 006)', () => {
     });
     expect(parseRoute('#/metronomo')).toEqual({ section: 'metronome' });
     expect(parseRoute('#/Metrónomo/')).toEqual({ section: 'metronome' });
+    expect(parseRoute('#/tablaturas')).toEqual({ section: 'tabs', subRoute: 'library' });
+    expect(parseRoute('#/tablaturas/práctica')).toEqual({
+      section: 'tabs',
+      subRoute: 'practice',
+    });
+    expect(parseRoute('#/tablaturas/estudio')).toEqual({
+      section: 'tabs',
+      subRoute: 'editor',
+    });
+    expect(parseRoute('#/tablaturas/escalas')).toEqual({
+      section: 'tabs',
+      subRoute: 'scales',
+    });
+    expect(parseRoute('#/tablaturas/catálogos')).toEqual({
+      section: 'tabs',
+      subRoute: 'catalogs',
+    });
   });
 
   it('abre el Afinador con hash vacío o desconocido', () => {
@@ -39,6 +56,11 @@ describe('Rutas por hash (Spec 006)', () => {
       { section: 'chords', tab: 'dictionary' },
       { section: 'chords', tab: 'identify' },
       { section: 'metronome' },
+      { section: 'tabs', subRoute: 'library' },
+      { section: 'tabs', subRoute: 'practice' },
+      { section: 'tabs', subRoute: 'editor' },
+      { section: 'tabs', subRoute: 'scales' },
+      { section: 'tabs', subRoute: 'catalogs' },
     ];
     for (const route of routes) {
       expect(parseRoute(routeToHash(route))).toEqual(route);

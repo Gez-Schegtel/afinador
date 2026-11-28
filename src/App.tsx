@@ -20,14 +20,16 @@ import { MetronomeProvider } from './shell/MetronomeContext';
 import { useGlobalKeyboard } from './shell/useGlobalKeyboard';
 import { TunerSection } from './sections/TunerSection';
 
-// Acordes y Metrónomo se cargan bajo demanda para no agrandar el arranque del afinador.
+// Acordes, Metrónomo y Tablaturas se cargan bajo demanda para no agrandar el arranque del afinador.
 const ChordsSection = lazy(() => import('./sections/ChordsSection'));
 const MetronomeSection = lazy(() => import('./sections/MetronomeSection'));
+const TabsSection = lazy(() => import('./sections/TabsSection'));
 
 const SECTION_TITLES: Readonly<Record<SectionId, string>> = {
   tuner: 'Afinador cromático',
   chords: 'Acordes',
   metronome: 'Metrónomo',
+  tabs: 'Tablaturas',
 };
 
 export function App() {
@@ -89,6 +91,7 @@ export function App() {
           {route.section === 'tuner' && <TunerSection />}
           {route.section === 'chords' && <ChordsSection tab={route.tab} />}
           {route.section === 'metronome' && <MetronomeSection />}
+          {route.section === 'tabs' && <TabsSection subRoute={route.subRoute} />}
         </Suspense>
       </div>
       </MetronomeProvider>

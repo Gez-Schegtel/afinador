@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReferenceToneEngine } from '../audio/reference-tone';
 import { TunerEngine, type TunerEngineStatus } from '../audio/tuner-engine';
+import {
+  applyGuidedTuneReading,
+  effectiveGuidedStringMidi,
+  getActiveGuidedSession,
+  guidedStringLabel,
+  setActiveGuidedSession,
+  type GuidedTuningSession,
+} from '../core/music/guided-tuning';
 import {
   DEFAULT_A4_HZ,
   clampA4,
@@ -25,10 +34,10 @@ import { TunerGauge, type GaugeFrameData } from '../components/TunerGauge';
 import {
   HeaderActions,
   HeaderSubtitle,
+  useAppShell,
   useSpaceShortcut,
 } from '../shell/AppShell';
-import { useMetronome } from '../shell/MetronomeContext';
-import { setAudioBusy } from '../shell/audio-activity';
+import { audioArbitrator } from '../shell/audio-arbitrator';
 
 const STORAGE_A4_KEY = 'afinador_a4_hz';
 const STORAGE_TARGET_MIDI_KEY = 'afinador_target_midi';
@@ -94,16 +103,34 @@ interface ManualConfig {
 }
 
 export function TunerSection() {
+  const { navigate } = useAppShell();
+  const [guidedSession, setGuidedSession] = useState<GuidedTuningSession | null>(() =>
+    getActiveGuidedSession()
+  );
   const [a4Hz, setA4Hz] = useState<number>(loadInitialA4);
-  const [isManual, setIsManual] = useState<boolean>(loadInitialManualMode);
-  const [targetMidi, setTargetMidi] = useState<number>(loadInitialTargetMidi);
+  const [isManual, setIsManual] = useState<boolean>(() =>
+    getActiveGuidedSession() ? true : loadInitialManualMode()
+  );
+  const [targetMidi, setTargetMidi] = useState<number>(() => {
+    const g = getActiveGuidedSession();
+    return g ? effectiveGuidedStringMidi(g, g.activeStringIndex) : loadInitialTargetMidi();
+  });
   const [tuningSelection, setTuningSelection] = useState(loadInitialTuning);
   const tuning = tuningSelection.tuning;
 
+  const toneEngineRef = useRef<ReferenceToneEngine | null>(null);
+  const guidedSessionRef = useRef<GuidedTuningSession | null>(guidedSession);
+  guidedSessionRef.current = guidedSession;
+
   // La nota objetivo se escribe con la ortografía de la afinación si es una de sus cuerdas.
   const targetSpelling = useMemo(
-    () => (isManual ? spellingForMidi(tuning, targetMidi) : null),
-    [isManual, tuning, targetMidi]
+    () =>
+      guidedSession
+        ? guidedSession.tuning[guidedSession.activeStringIndex] ?? null
+        : isManual
+          ? spellingForMidi(tuning, targetMidi)
+          : null,
+    [guidedSession, isManual, tuning, targetMidi]
   );
 
   const [isListening, setIsListening] = useState(false);
@@ -112,9 +139,6 @@ export function TunerSection() {
   const [wakeLocked, setWakeLocked] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const metronome = useMetronome();
-  const metronomeRef = useRef(metronome);
-  metronomeRef.current = metronome;
 
   const [displayMatch, setDisplayMatch] = useState<ChromaticMatch | null>(null);
   const [isHolding, setIsHolding] = useState(false);
@@ -190,8 +214,11 @@ export function TunerSection() {
 
   useEffect(() => {
     manualConfigRef.current = { isManual, targetMidi, spelling: targetSpelling };
-    saveToStorage(STORAGE_TARGET_MIDI_KEY, String(targetMidi));
-    saveToStorage(STORAGE_MANUAL_MODE_KEY, isManual ? '1' : '0');
+    // En Modo Guiado desde tablatura no sobrescribimos las preferencias permanentes de Spec 002.
+    if (!guidedSessionRef.current) {
+      saveToStorage(STORAGE_TARGET_MIDI_KEY, String(targetMidi));
+      saveToStorage(STORAGE_MANUAL_MODE_KEY, isManual ? '1' : '0');
+    }
 
     lastFrequencyRef.current = null;
     hysteresisRef.current = {
@@ -308,10 +335,40 @@ export function TunerSection() {
         true
       );
     }
+    const unregisterAudio = audioArbitrator.register('tuner', {
+      stop: () => engine.stop(),
+    });
     return () => {
+      unregisterAudio();
       void engine.stop();
     };
   }, []);
+
+  useEffect(() => {
+    const toneEngine = new ReferenceToneEngine();
+    toneEngineRef.current = toneEngine;
+    return () => {
+      toneEngine.dispose();
+      toneEngineRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!guidedSession) return;
+    const next = applyGuidedTuneReading(guidedSession, displayMatch, isHolding);
+    if (next !== guidedSession) {
+      setGuidedSession(next);
+      setActiveGuidedSession(next);
+    }
+  }, [displayMatch, isHolding, guidedSession]);
+
+  const handlePlayReferenceTone = useCallback(
+    (midi: number) => {
+      setNotice(null);
+      void toneEngineRef.current?.play(midi, a4Hz);
+    },
+    [a4Hz]
+  );
 
   const handleSelectTuning = useCallback(
     (instrument: InstrumentId, tuningId: string) => {
@@ -336,13 +393,17 @@ export function TunerSection() {
       void engine.stop();
     } else if (status === 'idle') {
       setErrorMsg(null);
-      // El micrófono captura audio crudo: los clics del metrónomo se colarían en la lectura.
-      if (metronomeRef.current.running) {
-        metronomeRef.current.stop();
+      const stopped = audioArbitrator.stopConflictsSync('tuner');
+      if (stopped.includes('metronome')) {
         setNotice('Se detuvo el metrónomo para que el micrófono no capte sus clics.');
+      } else if (stopped.includes('tabs')) {
+        setNotice('Se detuvo la reproducción de tablatura para abrir el micrófono.');
+      } else if (stopped.includes('tone')) {
+        setNotice('Se detuvo el tono de referencia para abrir el micrófono.');
       } else {
         setNotice(null);
       }
+      // Invocación síncrona en el evento del usuario para conservar permiso/gesto en móvil.
       void engine.start();
     }
   }, []);
@@ -350,10 +411,10 @@ export function TunerSection() {
   useSpaceShortcut(toggleListening);
 
   useEffect(() => {
-    setAudioBusy('tuner', engineStatus !== 'idle');
+    audioArbitrator.setActive('tuner', engineStatus !== 'idle');
   }, [engineStatus]);
 
-  useEffect(() => () => setAudioBusy('tuner', false), []);
+  useEffect(() => () => audioArbitrator.release('tuner'), []);
 
   const isBusy = engineStatus === 'starting' || engineStatus === 'stopping';
   const footswitchLabel =
@@ -398,6 +459,70 @@ export function TunerSection() {
         </div>
       )}
 
+      {guidedSession && (
+        <section className="panel-card guided-tuning-card" aria-label="Afinador guiado por pista">
+          <div className="tabs-toolbar">
+            <div>
+              <strong>Modo Guiado: {guidedSession.songTitle}</strong>
+              <div className="tuning-changes">
+                Pista: {guidedSession.trackName}
+                {guidedSession.capo > 0 ? ` · Capo ${guidedSession.capo}` : ''}
+              </div>
+            </div>
+            <div className="tabs-toolbar-actions">
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={() => handlePlayReferenceTone(targetMidi)}
+              >
+                🔊 Escuchar cuerda
+              </button>
+              <button
+                type="button"
+                className="chip-btn is-active"
+                onClick={() => navigate({ section: 'tabs', subRoute: 'practice' })}
+              >
+                ← Volver a la tablatura
+              </button>
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={() => {
+                  setActiveGuidedSession(null);
+                  setGuidedSession(null);
+                }}
+              >
+                Salir del modo guiado
+              </button>
+            </div>
+          </div>
+
+          <div className="guided-strings-row">
+            {guidedSession.tuning.map((_, idx) => {
+              const done = guidedSession.completedStrings[idx] ?? false;
+              const active = guidedSession.activeStringIndex === idx;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`chip-btn guided-string-btn ${active ? 'is-active' : ''} ${done ? 'is-done' : ''}`}
+                  onClick={() => {
+                    const updated = { ...guidedSession, activeStringIndex: idx };
+                    setGuidedSession(updated);
+                    setActiveGuidedSession(updated);
+                    setIsManual(true);
+                    setTargetMidi(effectiveGuidedStringMidi(updated, idx));
+                  }}
+                >
+                  {done ? '✓ ' : ''}
+                  {guidedStringLabel(guidedSession, idx)}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <div className="pedal-workspace">
         <TunerGauge
           frameRef={gaugeFrameRef}
@@ -423,6 +548,18 @@ export function TunerSection() {
           />
 
           <CalibrationControl a4Hz={a4Hz} onChange={setA4Hz} />
+
+          {isManual && (
+            <div className="tabs-toolbar-actions">
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={() => handlePlayReferenceTone(targetMidi)}
+              >
+                🔊 Tono de referencia ({lockedNote?.fullName ?? targetMidi})
+              </button>
+            </div>
+          )}
 
           <footer className="pedal-footswitch-area">
             <button

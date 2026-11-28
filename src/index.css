@@ -213,10 +213,10 @@ select {
   gap: 12px;
 }
 
-/* Navegación entre secciones (Spec 006) */
+/* Navegación entre secciones (Specs 006 y 008) */
 .section-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
   background: var(--bg-screen);
   border: 1px solid var(--border-chassis);
@@ -226,19 +226,27 @@ select {
 
 .section-nav-btn {
   min-height: 40px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   border-radius: 9px;
   color: var(--text-secondary);
-  font-size: 0.76rem;
+  font-size: 0.69rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
+}
+
+@media (max-width: 360px) {
+  .section-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .section-nav-btn.is-active {
@@ -1542,11 +1550,928 @@ select {
   .identify-board {
     order: -1;
   }
+
+  .pedal-chassis[data-section='tabs'] {
+    max-width: 1380px;
+  }
+
+  .tabs-subtabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Tablaturas (Spec 008) */
+.tabs-subtabs {
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+}
+
+.tabs-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tabs-toolbar {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.tabs-toolbar-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tabs-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabs-theme-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.tabs-theme-select {
+  width: auto;
+  height: 36px;
+  font-size: 0.78rem;
+}
+
+.score-stage {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-stage.theme-warm-paper {
+  background: #f5ead1;
+  color: #24112b;
+  border-color: #bfa574;
+}
+
+.score-stage.theme-light {
+  background: #ffffff;
+  color: #111111;
+  border-color: #cccccc;
+}
+
+.tabs-subroute-note {
+  margin: 0;
+}
+
+.score-viewport {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.score-viewport svg {
+  display: block;
+}
+
+.at-cursor-bar {
+  background: rgba(201, 160, 234, 0.14);
+}
+
+.at-cursor-beat {
+  background: rgba(224, 168, 63, 0.75);
+  width: 3px;
+}
+
+.at-highlight * {
+  fill: var(--select) !important;
+  stroke: var(--select) !important;
 }
 
 /* El aviso de atajo de teclado no tiene sentido en pantallas táctiles grandes (tablets) */
 @media (hover: none), (pointer: coarse) {
   .desktop-shortcut-hint {
     display: none !important;
+  }
+}
+
+/* Gimnasio de Escalas, Biblioteca BYOT y Modo Práctica (Specs 009 & 010) */
+.gym-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gym-controls,
+.gym-preview,
+.library-controls-bar,
+.setlists-panel,
+.library-list,
+.practice-drawer,
+.practice-console,
+.mixer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gym-row-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gym-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.gym-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gym-theory-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.gym-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.legend-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-chassis);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+.legend-pill.is-root {
+  background: var(--led-amber);
+  color: var(--bg-outer);
+}
+
+.legend-pill.is-chord {
+  background: var(--select);
+  color: var(--bg-outer);
+}
+
+.legend-pill.is-char {
+  background: var(--led-green);
+  color: var(--bg-outer);
+}
+
+.scale-fretboard-svg {
+  display: block;
+  min-width: 560px;
+  max-width: 100%;
+  height: auto;
+}
+
+.dropzone-card {
+  border-style: dashed;
+  border-width: 2px;
+  border-color: var(--border-chassis);
+}
+
+.dropzone-card.is-dragging {
+  border-color: var(--select);
+  background: rgba(201, 160, 234, 0.08);
+}
+
+.dropzone-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.instant-drop-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.batch-error-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+}
+
+.library-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.library-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+}
+
+.library-item-main {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.library-item-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-meta-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.origin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: rgba(201, 160, 234, 0.16);
+  border: 1px solid rgba(201, 160, 234, 0.35);
+  color: var(--select);
+}
+
+.setlist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setlist-item-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.setlist-note-input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.practice-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practice-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.practice-topbar-left,
+.practice-topbar-right,
+.practice-setlist-nav,
+.practice-song-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.practice-song-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.link-inline-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--select);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-align: left;
+}
+
+.practice-section-strip,
+.practice-loop-bar,
+.practice-transport-row,
+.practice-tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bar-num-input {
+  width: 64px;
+  height: 32px;
+  text-align: center;
+}
+
+.practice-canvas-zone {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.practice-viewport-wrapper {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.practice-scroll-frame {
+  position: relative;
+  max-height: 58vh;
+  overflow: auto;
+  border-radius: 10px;
+}
+
+.practice-return-cursor {
+  position: sticky;
+  top: 8px;
+  left: 8px;
+  z-index: 6;
+  margin-bottom: 8px;
+}
+
+.score-viewport.is-lefthanded svg {
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+.practice-drawer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mixer-tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mixer-track-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+}
+
+.saved-loop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.practice-scrub {
+  flex: 1 1 180px;
+  min-width: 120px;
+  accent-color: var(--select);
+}
+
+.practice-time-counter {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@media (max-width: 899px) {
+  .practice-scroll-frame {
+    max-height: 52vh;
+  }
+
+  .practice-drawer {
+    position: sticky;
+    bottom: 8px;
+    z-index: 30;
+    max-height: 46vh;
+    overflow-y: auto;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.55);
+  }
+
+  .practice-console {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.catalogs-connect-card,
+.catalog-source-card,
+.secondary-filters-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secondary-filters-panel {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-chassis);
+}
+
+.catalogs-grid,
+.secondary-filters-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+/* Spec 013: Studio Editor */
+.editor-shell,
+.editor-main-col,
+.editor-palette,
+.editor-wizard,
+.editor-inspector,
+.inspector-tuning-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editor-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-bars-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.editor-bar-box {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+}
+
+.editor-bar-box.is-current-bar {
+  border-color: var(--select);
+}
+
+.editor-bar-box.status-incomplete {
+  border-bottom: 3px solid var(--led-amber);
+}
+
+.editor-bar-box.status-exceeded {
+  border-bottom: 3px solid var(--led-red);
+}
+
+.editor-bar-box.status-complete {
+  border-bottom: 3px solid var(--led-green);
+}
+
+.editor-bar-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.editor-beats-row {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-beat-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.editor-beat-dur {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--select);
+}
+
+.editor-cell-btn {
+  min-width: 28px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editor-cell-btn.is-caret {
+  border-color: var(--led-amber);
+  background: rgba(245, 158, 11, 0.24);
+  color: #ffffff;
+}
+
+.rhythm-traffic-light {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-chassis);
+}
+
+.rhythm-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--led-green);
+}
+
+.rhythm-traffic-light.is-incomplete .rhythm-dot {
+  background: var(--led-amber);
+}
+
+.rhythm-traffic-light.is-exceeded .rhythm-dot {
+  background: var(--led-red);
+}
+
+.rhythm-summary {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.inspector-tracks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inspector-track-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Spec 014: Bends vectoriales, Paleta GM, Beat-Mapper, Revisiones A/B y ChordPro dividido */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(8, 6, 14, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+.bend-modal-card {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bend-graph-svg {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0c0914;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.bend-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.drum-palette-panel,
+.beatmapper-panel,
+.diff-viewer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.beatmapper-waveform {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0b0812;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.split-chordpro-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.chordpro-editor-textarea {
+  width: 100%;
+  min-height: 220px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.bar-num-input {
+  width: 74px;
+}
+
+@media (min-width: 900px) {
+  .gym-layout {
+    display: grid;
+    grid-template-columns: 380px minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+
+  .editor-workspace {
+    display: grid;
+    grid-template-columns: 276px minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .practice-drawer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mixer-track-row {
+    grid-template-columns: minmax(120px, 1.2fr) 1fr 1fr auto;
+    align-items: center;
+  }
+
+  .catalogs-grid,
+  .secondary-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chordpro-lyrics-sheet.cols-2 {
+    column-count: 2;
+    column-gap: 24px;
+  }
+
+  .split-chordpro-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .bend-modal-card {
+    max-width: 560px;
+  }
+}
+
+/* Spec 012: Diapasón/Teclado en vivo, ChordPro + Capo, Afinador Guiado e Impresión Limpia */
+.live-instrument-box,
+.chordpro-panel,
+.guided-tuning-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.live-fretboard-svg {
+  display: block;
+  min-width: 760px;
+  max-width: 100%;
+  height: auto;
+}
+
+.virtual-keyboard-svg {
+  display: block;
+  min-width: 680px;
+  max-width: 100%;
+  height: auto;
+}
+
+.chordpro-diagrams-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chordpro-diagram-card {
+  width: 162px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.is-lefthanded-diagram svg {
+  transform: scaleX(-1);
+}
+
+.voicing-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chordpro-lyrics-sheet {
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-screen);
+  border: 1px solid var(--border-chassis);
+}
+
+.chordpro-line {
+  margin-bottom: 10px;
+  padding-left: 6px;
+}
+
+.chordpro-line.is-chorus {
+  border-left: 3px solid var(--select);
+}
+
+.chordpro-chords-row {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--led-amber);
+  line-height: 1.25;
+}
+
+.chordpro-lyrics-row {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.chordpro-comment {
+  margin: 8px 0 4px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--select);
+  text-transform: uppercase;
+}
+
+.guided-strings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guided-string-btn.is-done {
+  border-color: var(--led-green);
+  color: var(--led-green);
+}
+
+@media print {
+  :root,
+  body,
+  .pedal-chassis,
+  .pedal-shell,
+  .score-stage,
+  .chordpro-panel,
+  .chordpro-lyrics-sheet {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border-color: #cccccc !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pedal-header,
+  .section-nav,
+  .sub-tabs,
+  .practice-topbar,
+  .practice-section-strip,
+  .practice-drawer,
+  .practice-console,
+  .live-instrument-box,
+  .modal-backdrop,
+  .export-score-panel,
+  .beatmapper-panel,
+  .diff-viewer-panel,
+  .drum-palette-panel,
+  .at-cursors,
+  .practice-return-cursor {
+    display: none !important;
+  }
+
+  .practice-scroll-frame {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .score-viewport svg [fill]:not([fill='none']),
+  .score-viewport .at-highlight * {
+    fill: #000000 !important;
+  }
+
+  .score-viewport svg [stroke]:not([stroke='none']),
+  .score-viewport .at-highlight * {
+    stroke: #000000 !important;
+  }
+
+  .chordpro-panel .tabs-toolbar-actions,
+  .chordpro-panel .voicing-pager,
+  .chordpro-panel select,
+  .chordpro-panel input {
+    display: none !important;
+  }
+
+  .score-viewport svg,
+  .chordpro-line,
+  .chordpro-diagram-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .chordpro-chords-row,
+  .chordpro-lyrics-row,
+  .chordpro-comment {
+    color: #000000 !important;
   }
 }

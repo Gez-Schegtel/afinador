@@ -58,6 +58,36 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
 - Nuevo nombre visible (*Endurend*, sin cambiar identificadores técnicos), logo en el encabezado, gabinete ocre con sol psicodélico, placas y visor violeta y *footswitch* metálico con LED tipo joya ([`docs/specs/007-identidad-visual-endurend.md`](./docs/specs/007-identidad-visual-endurend.md)).
 - Íconos PNG de la PWA (192, 512 y *maskable*), íconos y splash de Android regenerados con la marca (reemplazan el logo por defecto de Capacitor) y paleta en variables CSS con contraste ≥ 4.5:1.
 
+### Fase 11 — Motor Base de Tablaturas, Modelo Canónico y Favicon RGBA (`Spec 008`)
+- Corrección de favicon (`32×32` y `64×64`) e íconos estándar/Android en `RGBA` real (`colorType 6`) sin halo ni esquinas negras (`src/icons.test.ts`).
+- Modelo canónico puro `ScoreDocument` (`src/core/tabs/model.ts`) con aritmética exacta `PPQ = 960` + racionales irreducibles (`rhythm.ts`), puente bidireccional `alphatab-bridge.ts` y soporte de `.gp`/`.musicxml`/`.mxl`/`.mid`/`.alphatex` ([`docs/specs/008-motor-tablaturas-y-modelo-canonico.md`](./docs/specs/008-motor-tablaturas-y-modelo-canonico.md)).
+- Empaquetado local *offline* de `@coderline/alphatab` (`MPL-2.0`), fuente `Bravura` (`OFL-1.1`), `sonivox.sf2` (`Apache-2.0`) y `fflate` (`MIT`) sin `SharedArrayBuffer` ni CDNs, con trabajadores IIFE dedicados cargados bajo demanda (`#/tablaturas/*`).
+- Coordinador `AudioArbitrator` (`src/shell/audio-arbitrator.ts`) asegurando exclusión mutua entre micrófono crudo, metrónomo, reproductor de tablaturas y tonos guía.
+
+### Fase 12 — Biblioteca BYOT, Modo Práctica y Gimnasio de Escalas (`Specs 009 y 010`)
+- Biblioteca local `IndexedDB` (`src/storage/tabs-db.ts`) con carga automática de **16 ejemplos curados de fábrica**, importación individual/lotes/`.zip`, detección de duplicados SHA-256, favoritos, setlists portables `.zip`, historial reciente y backup total ([`docs/specs/009-reproductor-practica-y-biblioteca-byot.md`](./docs/specs/009-reproductor-practica-y-biblioteca-byot.md)).
+- Reproductor Práctica en 3 zonas (`PracticePlayer.tsx`) con cambio de pista sin cortar audio, bucle A–B + bucles guardados, *Speed Trainer* (`15%–150%`), *count-in*, metrónomo, transposición `-12..+12 st`, mezclador multipista, carga de `.sf2` propio y *Screen Wake Lock*.
+- Catálogo teórico de 42 escalas/modos/arpegios (`src/core/music/scales.ts`), 5 sistemas de digitación (`3nps`, `caged`, 2 octavas, 1 cuerda y *sweep picking*), generación rítmica exacta `PPQ = 960` con batería/drone modal y consola interactiva `ScaleGym` ([`docs/specs/010-generador-escalas-modos-arpegios.md`](./docs/specs/010-generador-escalas-modos-arpegios.md)).
+
+### Fase 13 — Catálogos Externos Enchufables y Filtros Persistentes (`Spec 011`)
+- Validador estricto `CatalogManifestV1` (`src/core/tabs/catalog-manifest.ts`) contra XSS y rutas/esquemas inseguros, importador/exportador portátil `.zip` (`catalog-export.ts`) y gestión manual HTTPS/`offline` sin conexiones automáticas ([`docs/specs/011-catalogos-externos-json.md`](./docs/specs/011-catalogos-externos-json.md)).
+- Selector rápido persistente de instrumento con selección automática de pista y filtros secundarios combinados (`library-filters.ts`, `TabsLibrary.tsx`, `CatalogsManager.tsx`).
+
+### Fase 14 — Herramientas de Práctica Integradas y Tonos de Referencia (`Spec 012`)
+- Diapasón interactivo en tiempo real (`LiveFretboard.tsx`) con colores por grado modal y teclado virtual (`VirtualKeyboard.tsx`) sincronizados al cursor de audio ([`docs/specs/012-herramientas-practica-integradas.md`](./docs/specs/012-herramientas-practica-integradas.md)).
+- Parser/visor `ChordPro` (`chordpro.ts`, `ChordProView.tsx`) con diagramas `< 1 / N >` reutilizando Spec 003 y cálculo de cejilla `Capo 0–12` (`capo.ts`), más hoja de impresión vectorial (`@media print`).
+- Puente de **Afinador Guiado por Pista** (`guided-tuning.ts`) conectado al motor `MPMDetector + QIFFT` real sin sobrescribir preferencias de Spec 002, y síntesis Web Audio de **Tonos de Referencia Audibles** (`reference-tone.ts`) arbitrada contra el micrófono.
+
+### Fase 15 — Modo Edición Estilo Guitar Pro (`Spec 013`)
+- Arquitectura estricta sobre **Command Bus** reversible (`commands.ts`, `history.ts`) con `Undo/Redo`, `BatchCommand` y protección *copy-on-write* al editar orígenes de fábrica o catálogos ([`docs/specs/013-editor-tablaturas-nucleo.md`](./docs/specs/013-editor-tablaturas-nucleo.md)).
+- Cursor rápido `< 16 ms` (`ScoreEditor.tsx`) desacoplado del Worker de render, buffer numérico `400 ms` (`fret-input-buffer.ts`), semáforo rítmico + completado exacto de silencios en `PPQ = 960` (`rest-completion.ts`, `RhythmTrafficLight.tsx`), desplazamiento entre cuerdas conservando MIDI (`Alt+↑/↓`, `string-shift.ts`), inspector multipista (`TrackInspector.tsx`), feedback sonoro y entrada opcional Web MIDI.
+
+### Fase 16 — Edición Avanzada, Exportadores Universales, Beat-Mapper y Revisiones A/B (`Spec 014`)
+- Editor vectorial de curvas *Bend/Whammy* (`bend-curve.ts`, `BendEditorModal.tsx`) con presets (`1/2`, `Full`, `Release`, `Pre-bend`, `Hold`), polifonía real `Voz 1 / Voz 2` (`Ctrl/Cmd+1/2`), paleta GM de batería (`DrumPalette.tsx`) y editor dividido de `ChordPro` ([`docs/specs/014-edicion-avanzada-exportacion-y-beat-mapper.md`](./docs/specs/014-edicion-avanzada-exportacion-y-beat-mapper.md)).
+- Exportadores puros 100% *offline* sin marcas de agua (`ExportScorePanel.tsx`, `src/core/tabs/exporters/*`) hacia `.gp`, `.musicxml`, `.mxl`, `.alphatex`, `.mid` y `.cho` validados con *round-trip*.
+- Sincronizador manual *Beat-Mapper* (`beat-sync.ts`, `BeatMapperView.tsx`) con forma de onda en `<canvas>`, *Tap-Sync* (`B`), interpolación lineal monótona, exportación `.sync.json` y estiramiento temporal *WSOLA* (`15%–150%`) en `AudioWorklet` sin `SharedArrayBuffer` (`wsola.ts`, `wsola.worklet.ts`, `sync-audio-player.ts`).
+- Historial de revisiones locales en `IndexedDB` (`ScoreRevisionRecord`) y comparador visual/auditivo `Diff A/B` (`score-diff.ts`, `DiffViewer.tsx`) con restauración reversible en un clic.
+
 ---
 
 ## 📋 Próximos Hitos y Backlog
@@ -70,5 +100,16 @@ Registro cronológico de lo construido hasta el momento y próximos hitos planif
   - si la WebView soporta la *Screen Wake Lock API*: en ese caso, reemplazar `FLAG_KEEP_SCREEN_ON` (hoy mantiene la pantalla encendida aunque el afinador esté detenido) por el bloqueo que ya usa la web;
   - si la app funciona sin el permiso `INTERNET` (es 100% offline): quitarlo haría cumplir esa promesa a nivel del sistema operativo.
 - [ ] **Publicación en F-Droid:** preparar metadatos Fastlane (ícono, capturas y descripción en español/inglés) y abrir solicitud en el repositorio de F-Droid.
-- [ ] **Spec futuro — Generador de Tono de Referencia Audible:** sintetizar mediante Web Audio API un tono puro/armónico de la nota objetivo calibrado según el `A4` activo (útil al encordar desde cero o afinar de oído).
 - [ ] **Spec futuro — Monitor de Estabilidad Temporal (Octavación / Quintaje):** pequeño gráfico histórico de cents para verificar la caída de afinación del ataque al *sustain* al calibrar puentes y cejillas.
+
+### Módulo de Tablaturas, Práctica y Composición (Specs 008–014 — Implementados)
+
+Plan secuencial traducido desde [`docs/informe_maestro_songsterr_guitar_pro_web_byot_y_cat_logos_json.md`](./docs/informe_maestro_songsterr_guitar_pro_web_byot_y_cat_logos_json.md) y [`docs/anexo_t_cnico_generador_de_escalas_modos_arpegios_y_ejemplos_de_f_brica.md`](./docs/anexo_t_cnico_generador_de_escalas_modos_arpegios_y_ejemplos_de_f_brica.md) para implementarse fase por fase manteniendo el núcleo DSP y las reglas de Software Libre / *Zero-AI* / *offline*:
+
+- [x] **[Spec 008](./docs/specs/008-motor-tablaturas-y-modelo-canonico.md) — Motor Base, Activos Estáticos y Modelo Canónico (`PPQ = 960`):** 4ª sección `Tablaturas` con carga diferida, `ScoreDocument`, aritmética racional sin punto flotante, empaquetado local de `alphaTab` + `Bravura` + `sonivox.sf2` + `fflate` (sin `SharedArrayBuffer`) y `AudioArbitrator` central.
+- [x] **[Spec 009](./docs/specs/009-reproductor-practica-y-biblioteca-byot.md) — Modo Práctica estilo Songsterr y Biblioteca BYOT (`IndexedDB`):** importación por arrastrar/soltar individual, lotes y `.zip`, Favoritos, Setlists portables, *Backup*, reproducción en 3 zonas, bucles A–B, *Speed Trainer* determinístico y mezclador multipista.
+- [x] **[Spec 010](./docs/specs/010-generador-escalas-modos-arpegios.md) — Gimnasio de Escalas, Modos, Arpegios y Ejemplos de Fábrica:** 3NPS, cajas CAGED, 2 octavas, 1 cuerda y *Sweep Picking*, patrones rítmicos exactos, batería/drone opcional y **16 ejemplos curados de fábrica** listos desde el primer arranque.
+- [x] **[Spec 011](./docs/specs/011-catalogos-externos-json.md) — Catálogos Externos JSON (`CatalogManifestV1`) y Filtro Persistente de Instrumento:** conexiones manuales bajo demanda (`https://` o `.zip` *offline*, cero tráfico automático en segundo plano), caché local, exportador de catálogo propio y selección automática de pista.
+- [x] **[Spec 012](./docs/specs/012-herramientas-practica-integradas.md) — Diapasón/Teclado en Vivo, `ChordPro` + `Capo`, Afinador Guiado con Tonos de Referencia e Impresión Limpia:** enlace directo desde las pistas al afinador de 64 bits (`MPMDetector` + `QIFFT`), coloreado por grados, cejilla matemática e integra el ítem anterior de *Tono de Referencia Audible*.
+- [x] **[Spec 013](./docs/specs/013-editor-tablaturas-nucleo.md) — Modo Edición estilo Guitar Pro:** cambio modal `Práctica ↔ Edición` (`E`) con *copy-on-write*, *Command Bus* (`Undo/Redo`), *Caret* `< 16 ms`, buffer de trastes (`400 ms`), semáforo rítmico, completado exacto de silencios, técnicas e inspector multipista.
+- [x] **[Spec 014](./docs/specs/014-edicion-avanzada-exportacion-y-beat-mapper.md) — Edición Avanzada, Exportadores Universales, *Beat-Mapper* Manual y Revisiones Diff A/B:** editor de curvas *Bend/Whammy*, `Voz 1/2`, kit de batería, exportadores `.gp`/`.musicxml`/`.mxl`/`.alphatex`/`.mid`/`.cho`, *Tap-Sync* + *WSOLA* sin `SharedArrayBuffer` y comparador A/B de revisiones.

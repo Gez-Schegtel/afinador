@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { MetronomeEngine } from '../audio/metronome-engine';
-import { setAudioBusy } from './audio-activity';
+import { audioArbitrator } from './audio-arbitrator';
 import {
   resolveMetronomeSettings,
   type MetronomeSettings,
@@ -76,8 +76,16 @@ export function MetronomeProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   useEffect(() => {
-    setAudioBusy('metronome', running);
+    audioArbitrator.setActive('metronome', running);
   }, [running]);
+
+  useEffect(
+    () =>
+      audioArbitrator.register('metronome', {
+        stop: () => engineRef.current?.stop(),
+      }),
+    []
+  );
 
   useEffect(
     () => () => {
@@ -93,7 +101,16 @@ export function MetronomeProvider({ children }: { children: ReactNode }) {
 
   const start = useCallback(() => {
     setError(null);
-    void getEngine().start();
+    const needsWait = audioArbitrator.isActive('tuner');
+    const launch = () => {
+      void getEngine().start();
+    };
+    if (needsWait) {
+      void audioArbitrator.acquire('metronome').then(launch);
+    } else {
+      void audioArbitrator.acquire('metronome');
+      launch();
+    }
   }, [getEngine]);
 
   const stop = useCallback(() => {
@@ -104,10 +121,9 @@ export function MetronomeProvider({ children }: { children: ReactNode }) {
     if (engineRef.current?.isRunning()) {
       void engineRef.current.stop();
     } else {
-      setError(null);
-      void getEngine().start();
+      start();
     }
-  }, [getEngine]);
+  }, [start]);
 
   const getVisualClick = useCallback(
     () => engineRef.current?.getVisualClick() ?? null,
